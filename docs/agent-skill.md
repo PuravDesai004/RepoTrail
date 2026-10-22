@@ -15,13 +15,14 @@ validator. The full product is not guaranteed to be faster or smarter.
 Download [repotrail-skill.zip](../downloads/repotrail-skill.zip) and its
 [SHA-256 checksum](../downloads/repotrail-skill.zip.sha256), extract it, and run one of:
 
-```text
-python repotrail/install.py --host codex
-python repotrail/install.py --host claude
+```powershell
+py -3.14 repotrail/install.py --host codex
+py -3.14 repotrail/install.py --host claude
 ```
 
-Use a trusted Python interpreter. The installer needs Python 3.10+; evidence collection
-requires **Python 3.14.x and Git 2.48+** on PATH. It detects Python 3.14.
+Run these from the extracted folder containing `repotrail`. On Linux/macOS, replace
+`py -3.14` with `python3.14`. Use **Python 3.14.x and Git 2.48+** for installation and
+evidence collection. The launcher detects the Python 3.14 runtime.
 It installs into `~/.agents/skills/repotrail` for Codex or `~/.claude/skills/repotrail` for
 Claude Code. Restart/reload your agent if it does not discover the skill immediately.
 An identical installation is idempotent. A different existing installation is preserved;

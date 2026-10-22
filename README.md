@@ -22,18 +22,69 @@ Inspected code is never imported, executed, installed, tested, or modified.
 
 ## Use your agent's model — no API key
 
-Download the [RepoTrail skill ZIP](downloads/repotrail-skill.zip), extract it and run
-`python repotrail/install.py --host codex` or `--host claude`. With Python 3.14 and Git
-available, the skill automatically prepares its isolated core runtime on first use.
+The skill uses **the model already running in your Codex or Claude Code session**.
+You do not need a separate API key or a clone of RepoTrail.
 
-```text
-$repotrail C:/code/gridcast commit HEAD~2
-/repotrail /home/me/gridcast whole
+### 1. Download and extract
+
+Have **Python 3.14.x**, **Git 2.48+**, and Codex or Claude Code installed.
+
+[Download repotrail-skill.zip](https://github.com/PuravDesai004/RepoTrail/raw/refs/heads/main/downloads/repotrail-skill.zip)
+and extract the complete ZIP. The [SHA-256 checksum](downloads/repotrail-skill.zip.sha256)
+is also available. Open a terminal in the extracted folder that contains the `repotrail`
+directory; the installer should be at `repotrail/install.py` relative to that terminal.
+
+### 2. Install once for your host
+
+Run the command for your host, or both commands if you use both.
+
+**Windows / PowerShell:**
+
+```powershell
+# Codex
+py -3.14 repotrail/install.py --host codex
+
+# Claude Code
+py -3.14 repotrail/install.py --host claude
 ```
 
-Codex uses `$repotrail`; Claude Code uses `/repotrail`. Your current agent model explains
-the evidence. Commit snapshots and paged available-history explanations need no separate
-provider key. See the [skill guide](docs/agent-skill.md) for setup, scope and coverage limits.
+**Linux / macOS:**
+
+```bash
+# Codex
+python3.14 repotrail/install.py --host codex
+
+# Claude Code
+python3.14 repotrail/install.py --host claude
+```
+
+The installer places the skill in `~/.agents/skills/repotrail` for Codex or
+`~/.claude/skills/repotrail` for Claude Code, so it is available across your repositories.
+Restart the host or start a new session if the skill does not appear.
+
+### 3. Open your repository and ask
+
+Open your **own local Git repository** in Codex, or start Claude Code from its root.
+Enter these prompts in the agent chat:
+
+| What you want | Codex | Claude Code |
+| --- | --- | --- |
+| Explain the available project history | `$repotrail . whole` | `/repotrail . whole` |
+| Explain a committed snapshot and its changes | `$repotrail . commit HEAD~2` | `/repotrail . commit HEAD~2` |
+| Explain history ending at a tag or commit | `$repotrail . through v1.0` | `/repotrail . through v1.0` |
+
+`.` means the repository open in your agent. You can also provide its absolute local path.
+Replace `HEAD~2` or `v1.0` with a commit SHA, tag, or Git ref that exists in your repository.
+Use `commit REF` for a snapshot and `through REF` for the timeline ending there.
+
+On first use, RepoTrail automatically creates an isolated runtime and downloads its pinned
+core dependencies from PyPI. Allow setup access if your host asks; later uses reuse the
+runtime. Your current agent then explains the evidence with source citations. No Groq or
+Gemini key is needed for this workflow.
+
+`whole` follows history reachable from the selected local HEAD. Long histories are paged
+and may need continuation; missing history and source coverage limits are disclosed.
+See the [skill guide](docs/agent-skill.md) for more setup details and supported scope.
 
 Use the **full product** below for more control, structured validation, caching and the
 resumable LangGraph/API workflow. Performance depends on the model and repository; the

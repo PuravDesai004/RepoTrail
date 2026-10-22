@@ -6,26 +6,35 @@ First use needs PyPI access for pinned core dependencies; later runs reuse an is
 
 After downloading/extracting the complete bundle, install for one or both hosts:
 
-```text
-python repotrail/install.py --host codex
-python repotrail/install.py --host claude
+Open a terminal in the extracted folder containing the `repotrail` directory.
+Run the command for the host you use (or both if you use both).
+
+```powershell
+# Windows / PowerShell: Codex
+py -3.14 repotrail/install.py --host codex
+# Windows / PowerShell: Claude Code
+py -3.14 repotrail/install.py --host claude
 ```
 
-Use `python3` or `py` if that is your Python command. The installer copies this verified
+On Linux/macOS, use `python3.14` in place of `py -3.14`.
+The installer copies this verified
 folder to `~/.agents/skills/repotrail` for Codex or `~/.claude/skills/repotrail` for Claude
 Code. It does not edit global configuration or overwrite a different existing skill.
 Restart the host if needed to discover it. You can install without network; first invocation
 prepares the bundled engine and its pinned dependencies in a user-local virtual environment.
 
 ```text
-Codex:       $repotrail gridcast commit HEAD~2
-Claude Code: /repotrail gridcast commit HEAD~2
+Codex:       $repotrail . commit HEAD~2
+Claude Code: /repotrail . commit HEAD~2
 
-$repotrail gridcast whole
-/repotrail gridcast through v1.0
+$repotrail . whole
+/repotrail . whole
+$repotrail . through v1.0
+/repotrail . through v1.0
 ```
 
 Run these inside an accessible local repository, or give the agent its absolute local path.
+`.` means the open repository. Replace the example Git ref/tag with one that exists there.
 `commit` reads that immutable snapshot; `through` ends history at that ref; `whole` follows
 all available reachable history with pages and explicit coverage limits. No checkout/fetch
 is performed. Binary and omitted source remain gaps. The agent writes the explanation

@@ -9,7 +9,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "074341cc5684e878738ee239f19b893491243ca488c89075cddc03ed8a5099fa"
+      "sha256": "a0b0ea4f01b111e4ccbf1f630d3cbdf143038f0231848dcc56b037f9c857a01a"
     },
     {
       "path": "SKILL.md",
@@ -33,11 +33,11 @@
     },
     {
       "path": "runtime/manifest.json",
-      "sha256": "1d26b05b1bfcfc9fd597aa2f4e9fc968f54b7342344082d23a49ae411f2aa6ec"
+      "sha256": "d31261cb610508ac65111b33e0b198ff262532893b4574c8209d9d0c7247189c"
     },
     {
       "path": "runtime/repotrail-1.1.0-py3-none-any.whl",
-      "sha256": "1e0cd4eb8de327011a8ed9ca9031613c413a59f9cfbb9be3b471ce091146b77a"
+      "sha256": "1a12780be8a12222b6b1d419ccabf81a9b85641306ad9287a8e304199fd17796"
     },
     {
       "path": "runtime/requirements-core.txt",
