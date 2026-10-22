@@ -1,9 +1,10 @@
 include README.md LICENSE CONTRIBUTING.md AGENTS.md pyproject.toml requirements-dev.lock
 recursive-include docs *.md
 recursive-include examples *.py *.json *.md
-recursive-include scripts *.py
-recursive-include evals *.py *.json
-recursive-include tests *.py
+include scripts/build_skill.py
+prune tests
+prune evals
+exclude scripts/live_smoke.py scripts/verify_skill.py scripts/verify_wheel.py
 recursive-include skills *.md *.py *.yaml *.json *.txt *.whl
 include downloads/repotrail-skill.zip downloads/repotrail-skill.zip.sha256
 include skills/repotrail/LICENSE .gitattributes

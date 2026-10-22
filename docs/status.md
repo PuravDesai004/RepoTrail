@@ -41,7 +41,8 @@ whole-history coverage limits and the full-product/API tradeoff.
 Windows and Ubuntu Python3.14 CI previously passed the full offline suite, lint/format,
 type checks, scripted grounding/cache evaluation, builds, and clean wheel installation.
 The README badge links to the latest branch results; consult that run before assuming
-that a newer commit passed remotely. Default tests/CI are keyless and use injected models.
+that a newer commit passed remotely. Maintainer tests use injected models and remain local.
+Public CI checks builds, bundle contents, lint and types; it makes no provider calls.
 
 The installed-wheel check exercises core-only commands before AI/MCP extras, then
 checkpoint pause/resume without credentials and the official MCP stdio client outside

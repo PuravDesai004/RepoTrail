@@ -24,3 +24,8 @@ dist/
 !.env.example
 *.zip
 !/downloads/repotrail-skill.zip
+/tests/
+/evals/
+/scripts/live_smoke.py
+/scripts/verify_skill.py
+/scripts/verify_wheel.py

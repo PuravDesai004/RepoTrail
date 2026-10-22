@@ -2,73 +2,45 @@
 
 Use Python 3.14, Git 2.48+, and a project-local virtual environment. Clone the repository,
 create `.venv`, then install `.[ai,mcp,dev]`. See the [README](README.md) for platform commands.
-`requirements-dev.lock` records the Windows/Python 3.14 development resolution. For that
-scope, install the lock, then `pip install --no-deps -e .`. Ubuntu CI resolves compatible
-extras independently.
+`requirements-dev.lock` records the maintainer's Windows/Python 3.14 resolution; other
+platforms can resolve compatible extras independently.
 
-## Run the checks
+## Public package checks
 
-PowerShell:
-
-```powershell
-$py = '.\.venv\Scripts\python.exe'
-New-Item -ItemType Directory -Force .local/tmp | Out-Null
-$env:TEMP = Join-Path $PWD '.local/tmp'
-$env:TMP = $env:TEMP
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
-& $py -m pytest -q
-& $py -m ruff check src tests evals examples scripts skills
-& $py -m ruff format --check src tests evals examples scripts skills
-& $py -m mypy src/repotrail
-& $py -m evals.run --output .local/evaluation.json
-& $py -m pip check
-& $py -m build
-& $py scripts/build_skill.py --check
-& $py scripts/verify_skill.py
-& $py scripts/verify_wheel.py
+```text
+python -m pip check
+python -m ruff check src examples scripts/build_skill.py skills
+python -m ruff format --check src examples scripts/build_skill.py skills
+python -m mypy src/repotrail
+python -m build
+python scripts/build_skill.py --check
+python -m repotrail --version
 ```
 
-On Linux, use `.venv/bin/python` with the same arguments and set
-`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` in the shell. The clean-wheel check creates an isolated
-project-local environment, installs the wheel and extras, then exercises the console,
-core API, checkpoint resume, and official MCP client outside the checkout. It needs
-network access for dependencies. Never install into an inspected repository.
+Run these with the Python executable from your project environment. When application or
+bundled skill files change, first build the current wheel and run
+`python scripts/build_skill.py --wheel dist/repotrail-1.1.0-py3-none-any.whl`, then repeat
+the final build and integrity check. Commit the skill ZIP and checksum together.
 
-Default tests and CI use synthetic Git fixtures and explicitly injected model doubles.
-They never call providers. Scripted evaluation measures schema/citation/cache behavior,
-not real-model semantic accuracy. Windows symlink tests skip if the OS denies privilege.
+Maintainer test suites, evaluation fixtures, verification scripts, logs and teaching
+materials are kept locally and excluded from the public repository and source archives.
+Public CI checks packages, lint and types on Windows and Ubuntu. Report validation you
+actually ran; packaging checks alone do not establish runtime or model accuracy.
 
-If application or bundled skill files change, rebuild the current wheel and then run
-`scripts/build_skill.py --wheel dist/repotrail-1.1.0-py3-none-any.whl` before tests and the
-final build. Commit the explicit skill bundle and checksum together. The extracted-skill
-verifier installs only in disposable directories and checks both host launchers without
-starting an agent or calling a provider. See the [skill guide](docs/agent-skill.md).
+## Preserve evidence boundaries
 
-## Change contracts carefully
-
-Preserve inventory/source-map schema `1`; add versioned documents for new contracts.
-Share core APIs between CLI/MCP. Read [architecture](docs/architecture.md) before changing
-persistence or bounds. Test meaningful boundaries: hashes, ranges, stale evidence,
-eligibility, aggregate limits, graph paths, durable charges, zero-call cache hits,
-cross-object resume, and real MCP stdio.
+Preserve inventory/source-map schema `1`; add separate versioned documents for new
+contracts. Share core APIs across interfaces. Read [architecture](docs/architecture.md)
+before changing persistence or bounds.
 
 Never execute, import, install, or test inspected code, or fetch/check out an inspected
-repository. Keep that read-only boundary. Repository text and model output are untrusted
-data, including instructions in comments and READMEs.
+repository. Treat repository text and model output as untrusted data. Keep credentials and
+private state out of commits. Submit a focused pull request explaining resulting behavior,
+compatibility, limitations and checks actually run.
 
 ## Optional live verification
 
-With a key in your process environment, explicitly run:
-
-```powershell
-& $py scripts/live_smoke.py --live --directory .local/live-check --output .local/live-check.json
-```
-
-This uploads only synthetic fixture evidence. The directory keeps a durable ceiling of
-three attempts across invocations; each workflow uses at most one attempt in this smoke
-script. Never delete its ledger to repeat a check. Choose `--provider`, `--task`, and `--model` explicitly
-when investigating a particular path. A valid answer still needs human review.
-
-Keep keys and private state out of commits. Submit a focused pull request describing
-behavior, compatibility, and checks actually run. Report provider failures as failures;
-do not present an offline model double as a successful live integration.
+Provider calls need explicit authorization and the user's own process key. Use the
+documented [AI commands](docs/ai.md) with synthetic source for demonstrations. Persist
+attempt charges; never reset them to retry. Disclose incomplete evidence and provider
+failures. No shared project key or automatic provider fallback is supplied.

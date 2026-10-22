@@ -152,10 +152,8 @@ and [architecture](docs/architecture.md) for contracts and tradeoffs.
 
 ```text
 src/repotrail/   Application, Python API, CLI, and MCP server
-tests/          Offline contract, workflow, and integration tests
-evals/          Scripted grounding and cache evaluation
 examples/       MCP client and host configuration example
-scripts/        Opt-in live smoke and clean wheel verification
+scripts/        Portable skill distribution builder
 skills/         Portable Codex / Claude Code skill and bundled engine
 downloads/      Verified skill ZIP and SHA-256 checksum
 docs/           Usage, configuration, architecture, and release status
