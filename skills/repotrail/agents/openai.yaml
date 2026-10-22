@@ -1,0 +1,6 @@
+interface:
+  display_name: "RepoTrail"
+  short_description: "Explain committed code and history with verified local evidence"
+  default_prompt: "Use $repotrail to explain this local repository at HEAD using source citations."
+policy:
+  allow_implicit_invocation: false

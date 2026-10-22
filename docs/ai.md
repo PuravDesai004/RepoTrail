@@ -6,6 +6,13 @@ review eligibility and contents before using private code. Deterministic command
 
 ## Credentials and model
 
+For the simplest setup, the [agent skill](agent-skill.md) uses the host session's current
+model without a separate API key. Prefer the full product for explicit model configuration,
+structured validation, caching and resumable LangGraph runs. Speed and answer quality
+depend on the model; there is no automatic performance guarantee. Groq is the recommended
+project API route. Every user supplies their own key; no shared credential is shipped.
+Arbitrary providers/models are not currently supported.
+
 Use `--provider groq` explicitly with your Groq key:
 
 ```powershell
@@ -37,7 +44,11 @@ label coercion is performed. See [Google structured outputs](https://ai.google.d
 
 `GenerationConfig.thinking_level` defaults to `low`. Provider, model, generation settings,
 backend, and prompt policy participate in cache/resume identity. Resume a Groq run with
-`--provider groq` and the same model/settings. See [live verification status](status.md).
+`--provider groq` and the same model/settings.
+
+Groq is the recommended provider. Gemini remains experimental: it can return unavailable
+service errors or responses rejected by the grounding schema. No successful post-fix
+Gemini generation is claimed, and RepoTrail never switches providers automatically.
 
 ## Budgets, grounding, and state
 
@@ -81,5 +92,4 @@ prunes older runs and graph checkpoints. Remote tracing is disabled.
 | Stale result | Evidence/configuration changed; start a new run. |
 
 Exception bodies are not printed because they may contain request data or keys. Reported
-token usage is returned when available; missing usage is not zero cost. The explicit
-[synthetic live smoke](../CONTRIBUTING.md#optional-live-verification) avoids uploading your source.
+token usage is returned when available; missing usage is not zero cost.

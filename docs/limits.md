@@ -37,4 +37,4 @@ References bind relative path, inclusive physical lines, and raw-byte SHA-256; h
 references also bind commit/blob. Symbol overlap describes syntax, not runtime impact or
 stable identity across edits. Metadata rechecks are best effort, not an atomic filesystem
 snapshot or a hostile-code sandbox. Bounded AI selection can omit relevant distant code.
-See [architecture](architecture.md) for implementation details.
+See the [skill guide](agent-skill.md) for historical packet and pagination limits.

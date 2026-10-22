@@ -12,6 +12,7 @@ Unicode for Windows console compatibility.
 | `overview ROOT` | Inventory, source map, README, packaging, and local history. |
 | `context ROOT PATH QUALIFIED_NAME [--definition-line N]` | Exact declaration, numbered lines, hash, and citation. |
 | `history ROOT [--ref HEAD] [--limit 20]` | Bounded local commit metadata. |
+| `agent ROOT --mode commit\|whole\|source [--ref REF]` | Keyless historical evidence for the current agent model; see the [skill guide](agent-skill.md). |
 | `changes ROOT BASE HEAD` | Committed endpoint trees, statuses, patches, and symbol overlap. |
 | `explain ROOT [--task TASK]` | Explicit AI workflow; default `explain_project`. |
 | `resume ROOT RUN_ID` | Continue a persisted workflow after checking evidence/configuration. |
