@@ -34,6 +34,7 @@ def zip_bytes(entries):
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, raw in sorted(entries.items()):
             info = zipfile.ZipInfo(name, (1980, 1, 1, 0, 0, 0))
+            info.create_system = 3
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, raw)
@@ -121,7 +122,14 @@ def check(project):
     entries["BUNDLE_MANIFEST.json"] = (skill / "BUNDLE_MANIFEST.json").read_bytes()
     archive_path = project / "downloads/repotrail-skill.zip"
     raw = archive_path.read_bytes()
-    assert raw == zip_bytes({"repotrail/" + name: content for name, content in entries.items()})
+    # ZIP platform flags/zlib streams may differ across builders. Verify the shipped
+    # archive checksum and exact uncompressed members, without recompressing it.
+    expected_members = {"repotrail/" + name: content for name, content in entries.items()}
+    with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+        assert len(archive.namelist()) == len(expected_members)
+        assert set(archive.namelist()) == set(expected_members) and archive.testzip() is None
+        for name, content in expected_members.items():
+            assert archive.read(name) == content, name
     assert archive_path.with_suffix(".zip.sha256").read_text().split()[0] == digest(raw)
     assert len(raw) < 8 * 1024 * 1024
     print(

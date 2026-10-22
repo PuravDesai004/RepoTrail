@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -165,3 +166,41 @@ def test_download_bundle_matches_current_sources():
         timeout=15,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_bundle_check_accepts_different_zip_encoding_but_rejects_content_drift(tmp_path):
+    spec = importlib.util.spec_from_file_location(
+        "repotrail_builder_test", PROJECT / "scripts/build_skill.py"
+    )
+    assert spec and spec.loader
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    shutil.copytree(
+        SKILL, tmp_path / "skills/repotrail", ignore=shutil.ignore_patterns("__pycache__")
+    )
+    shutil.copytree(
+        PROJECT / "src/repotrail",
+        tmp_path / "src/repotrail",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    for name in ("README.md", "pyproject.toml"):
+        shutil.copyfile(PROJECT / name, tmp_path / name)
+    archive_path = tmp_path / "downloads/repotrail-skill.zip"
+    archive_path.parent.mkdir()
+    with zipfile.ZipFile(PROJECT / "downloads/repotrail-skill.zip") as archive:
+        entries = {name: archive.read(name) for name in archive.namelist()}
+
+    def rewrite():
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_STORED) as archive:
+            for name, raw in entries.items():
+                archive.writestr(name, raw)
+        archive_path.with_suffix(".zip.sha256").write_text(
+            hashlib.sha256(archive_path.read_bytes()).hexdigest() + "  repotrail-skill.zip\n"
+        )
+
+    rewrite()
+    builder.check(tmp_path)
+    entries["repotrail/README.md"] += b"unreviewed drift"
+    rewrite()
+    with pytest.raises(AssertionError):
+        builder.check(tmp_path)
