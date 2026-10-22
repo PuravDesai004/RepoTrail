@@ -44,7 +44,11 @@ label coercion is performed. See [Google structured outputs](https://ai.google.d
 
 `GenerationConfig.thinking_level` defaults to `low`. Provider, model, generation settings,
 backend, and prompt policy participate in cache/resume identity. Resume a Groq run with
-`--provider groq` and the same model/settings. See [live verification status](status.md).
+`--provider groq` and the same model/settings.
+
+Groq is the recommended provider. Gemini remains experimental: it can return unavailable
+service errors or responses rejected by the grounding schema. No successful post-fix
+Gemini generation is claimed, and RepoTrail never switches providers automatically.
 
 ## Budgets, grounding, and state
 
@@ -88,5 +92,4 @@ prunes older runs and graph checkpoints. Remote tracing is disabled.
 | Stale result | Evidence/configuration changed; start a new run. |
 
 Exception bodies are not printed because they may contain request data or keys. Reported
-token usage is returned when available; missing usage is not zero cost. The explicit
-[synthetic live smoke](../CONTRIBUTING.md#optional-live-verification) avoids uploading your source.
+token usage is returned when available; missing usage is not zero cost.

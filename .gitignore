@@ -29,3 +29,10 @@ dist/
 /scripts/live_smoke.py
 /scripts/verify_skill.py
 /scripts/verify_wheel.py
+/examples/
+/scripts/build_skill.py
+/AGENTS.md
+/CONTRIBUTING.md
+/requirements-dev.lock
+/docs/architecture.md
+/docs/status.md

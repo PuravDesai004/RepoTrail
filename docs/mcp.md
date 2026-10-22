@@ -7,19 +7,25 @@ Install `.[mcp]` in RepoTrail's environment. Start one local stdio server per re
 ```
 
 On Unix use `.venv/bin/repotrail`. Stdout is protocol-only; diagnostics go to stderr.
-Configure your host using [the template](../examples/mcp-config.json), replacing executable
-and repository paths with absolute paths. Host configuration keys and environment forwarding
-vary; no desktop host configuration is edited automatically.
+For hosts that use a JSON `mcpServers` configuration, replace these executable and
+repository paths with your absolute paths:
 
-Try the official Python SDK client:
-
-```powershell
-.\.venv\Scripts\python.exe examples/mcp_client.py C:/code/my-project
+```json
+{
+  "mcpServers": {
+    "repotrail": {
+      "command": "C:/path/to/RepoTrail/.venv/Scripts/repotrail.exe",
+      "args": ["mcp", "--repo", "C:/code/my-project"]
+    }
+  }
+}
 ```
 
-The integration uses MCP 2.3's `MCPServer` and the official Python stdio client. Node is
-not required. No particular desktop host is verified; hosted connectivity and host-specific
-plugin packaging require separate adapters.
+On Unix, use `/absolute/path/to/RepoTrail/.venv/bin/repotrail`. Other hosts may use a
+different configuration format. Credentials must be forwarded through the server process
+environment. No desktop host configuration is edited automatically. The local integration
+uses MCP 2.3 stdio; Node is not required. Hosted connectivity and host-specific plugin
+packaging require separate adapters.
 
 ## Tools
 

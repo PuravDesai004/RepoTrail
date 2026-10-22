@@ -95,17 +95,3 @@ For launcher flags and cache overrides, see the
 [portable commands reference](../skills/repotrail/references/commands.md). The core engine
 also exposes `repotrail agent ROOT --mode commit|whole|source --json`, returning a separate
 `agent_evidence` schema `1`. Existing inventory/source-map contracts are unchanged.
-
-## Maintainer verification
-
-```text
-python -m build --wheel
-python scripts/build_skill.py --wheel dist/repotrail-1.1.0-py3-none-any.whl
-python scripts/build_skill.py --check
-```
-
-The downloadable ZIP contains the engine wheel, not a separate checkout. Rebuild it after
-changing application or bundled skill files. Maintainer tests and integration verifiers
-are kept locally, outside the public repository and source distribution. Those checks
-cover history/integrity and fresh extracted setup outside the checkout, without invoking
-a provider or starting another agent. Public CI checks packaging, lint and types.
