@@ -1,6 +1,6 @@
-"""Explicit synthetic Gemini smoke with a durable THREE-attempt build-wide ceiling.
+"""Explicit synthetic Gemini smoke with a durable three-attempt ceiling per directory.
 
-This example spends provider quota only with --live. It never runs in offline CI.
+This script spends provider quota only with --live. It never runs in offline CI.
 """
 
 import argparse
@@ -8,13 +8,13 @@ import json
 import sqlite3
 from pathlib import Path
 
-from repotrail.ai_models import GenerationConfig
+from repotrail.ai_models import SUPPORTED_MODELS, GenerationConfig
 from repotrail.demo import build_demo
 from repotrail.provider import GeminiGateway, ModelReply
 from repotrail.workflow import WorkflowService
 
 
-class BuildBudgetGateway:
+class SmokeBudgetGateway:
     backend_id = "langchain-gemini"
 
     def __init__(self, directory: Path, configuration: GenerationConfig):
@@ -30,7 +30,7 @@ class BuildBudgetGateway:
         with sqlite3.connect(self.path) as connection:
             connection.execute("BEGIN IMMEDIATE")
             if connection.execute("SELECT COUNT(*) FROM charges").fetchone()[0] >= 3:
-                return ModelReply(None, "build_live_budget_exhausted", retryable=False)
+                return ModelReply(None, "smoke_live_budget_exhausted", retryable=False)
             connection.execute("INSERT INTO charges(task) VALUES (?)", (task,))
         # A charge is durable before even constructing the network-capable adapter.
         return GeminiGateway(self.configuration).invoke(task, messages, config)
@@ -41,6 +41,7 @@ def main():
     parser.add_argument("--live", action="store_true", required=True)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--model", choices=SUPPORTED_MODELS, default="gemini-3.8-flash")
     parser.add_argument(
         "--task", choices=["explain_project", "review_diff", "both"], default="both"
     )
@@ -55,8 +56,8 @@ def main():
     else:
         base, head = build_demo(fixture)
         marker.write_text(json.dumps({"base": base, "head": head}), encoding="utf-8")
-    configuration = GenerationConfig(max_attempts=1)
-    gateway = BuildBudgetGateway(directory, configuration)
+    configuration = GenerationConfig(max_attempts=1, model=args.model)
+    gateway = SmokeBudgetGateway(directory, configuration)
     results = []
     with WorkflowService(
         fixture, config=configuration, state_dir=directory / "state", model=gateway
@@ -68,8 +69,8 @@ def main():
         charges = connection.execute("SELECT COUNT(*) FROM charges").fetchone()[0]
     report = {
         "synthetic_only": True,
-        "build_live_charges": charges,
-        "build_limit": 3,
+        "smoke_live_charges": charges,
+        "smoke_limit": 3,
         "model": configuration.model,
         "results": results,
     }
@@ -78,7 +79,7 @@ def main():
     print(
         json.dumps(
             {
-                "build_live_charges": charges,
+                "smoke_live_charges": charges,
                 "results": [
                     {
                         "task": result["task"],

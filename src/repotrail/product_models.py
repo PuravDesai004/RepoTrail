@@ -1,4 +1,4 @@
-"""Versioned v1 evidence contracts, separate from the compatible M01/M02 documents."""
+"""Versioned evidence contracts, separate from inventory and Python source-map documents."""
 
 import hashlib
 import json

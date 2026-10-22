@@ -1,4 +1,4 @@
-"""Separate M02 source-map contract; the M01 inventory schema stays unchanged."""
+"""Versioned Python source-map contract, independent of the inventory schema."""
 
 from pathlib import PurePosixPath
 from typing import Literal, Self

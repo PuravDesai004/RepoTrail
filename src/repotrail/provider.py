@@ -131,6 +131,22 @@ class GeminiGateway:
                 "reported_model": str(reported_model)[:128] if reported_model else None,
             }
             if parsed is None:
+                # Preserve bounded diagnostic categories, never raw output or exception text.
+                reason = metadata.get("finish_reason")
+                if isinstance(reason, str) and reason in {
+                    "STOP",
+                    "MAX_TOKENS",
+                    "SAFETY",
+                    "RECITATION",
+                    "OTHER",
+                }:
+                    usage_record["finish_reason"] = reason
+                error = response.get("parsing_error")
+                error_types: list[str] = []
+                while isinstance(error, BaseException) and len(error_types) < 6:
+                    error_types.append(type(error).__name__)
+                    error = error.__cause__ or error.__context__
+                usage_record["parsing_error_types"] = error_types
                 return ModelReply(None, "invalid_schema", usage=usage_record)
             payload = parsed.model_dump(mode="json") if hasattr(parsed, "model_dump") else parsed
             if (

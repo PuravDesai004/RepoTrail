@@ -31,7 +31,7 @@ class ReadBudget:
 
 
 def require_unchanged(root: Path, path: str, expected: tuple[int, ...]) -> None:
-    """Recheck M01 eligibility and metadata; observed changes invalidate the whole map."""
+    """Recheck inventory eligibility and metadata; changes invalidate the whole map."""
     try:
         current = file_signature(root, path)
     except OSError as exc:
@@ -162,7 +162,7 @@ def analyze_file(
 def analyze_python_repository(
     supplied: str | Path, *, limits: AnalysisLimits | None = None
 ) -> PythonSourceMap:
-    """Analyze eligible .py working files with M01 discovery and best-effort stability checks."""
+    """Analyze eligible .py working files with shared discovery and stability checks."""
     effective = limits if limits is not None else DEFAULT_LIMITS
     root = repository_root(supplied)
     inventory = inspect_repository(root)

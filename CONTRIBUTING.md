@@ -1,30 +1,66 @@
 # Contributing
 
-Use Python 3.14 and a project-local `.venv`; install `.[ai,mcp,dev]`. Windows/Python 3.14
-pins in requirements-dev.lock record an actual resolution, not a universal cross-platform
-lock. On Windows use `.venv\Scripts\python.exe`; on Linux use `.venv/bin/python`.
+Use Python 3.14, Git 2.48+, and a project-local virtual environment. Clone the repository,
+create `.venv`, then install `.[ai,mcp,dev]`. See the [README](README.md) for platform commands.
+`requirements-dev.lock` records the Windows/Python 3.14 development resolution. For that
+scope, install the lock, then `pip install --no-deps -e .`. Ubuntu CI resolves compatible
+extras independently.
 
-Run pytest, Ruff check/format, mypy, evals.run, build and pip check as shown in README.
-Set process-local TEMP/TMP to an existing `.local/tmp` if needed. Disable third-party pytest
-plugin autoload to keep tests independent from unrelated installed integrations.
-CI installs dependencies but the checks themselves are keyless and do not call providers.
-Never treat configured CI as a remotely observed pass.
+## Run the checks
 
-Preserve inventory/source-map schema `1`; introduce new document types for new contracts.
-Use synthetic disposable Git fixtures. Never execute/import/install/test inspected source,
-fetch/check out inspected repositories, or weaken read/budget checks. Application/example/
-test code is Python. Prefer shared core APIs to separate MCP or CLI implementations.
+PowerShell:
 
-Test meaningful boundaries: exact bytes/ranges, eligibility and stale evidence, aggregate
-bounds, conditional graph paths, durable pre-call charges, true zero-call cache hits,
-cross-object checkpoint resume and real MCP stdio. Inject test doubles explicitly and
-label their metrics; scripted success is not provider semantic accuracy.
+```powershell
+$py = '.\.venv\Scripts\python.exe'
+New-Item -ItemType Directory -Force .local/tmp | Out-Null
+$env:TEMP = Join-Path $PWD '.local/tmp'
+$env:TMP = $env:TEMP
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
+& $py -m pytest -q
+& $py -m ruff check src tests evals examples scripts
+& $py -m ruff format --check src tests evals examples scripts
+& $py -m mypy src/repotrail
+& $py -m evals.run --output .local/evaluation.json
+& $py -m pip check
+& $py -m build
+& $py scripts/verify_wheel.py
+```
 
-No paid calls belong in default tests/CI. `examples/live_smoke.py --live` is an explicit
-synthetic check with a durable three-attempt ledger. A run never exceeds two attempts.
-Keep keys out of source, command text, logs, checkpoints and bundles. Treat selected
-source/model state as potentially private. Source content must never become instructions.
+On Linux, use `.venv/bin/python` with the same arguments and set
+`PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` in the shell. The clean-wheel check creates an isolated
+project-local environment, installs the wheel and extras, then exercises the console,
+core API, checkpoint resume, and official MCP client outside the checkout. It needs
+network access for dependencies. Never install into an inspected repository.
 
-Do not stage, commit, push, configure remotes or publish automatically. Review MIT ownership/
-attribution before publication. Local completion/teaching artifacts and environments remain
-ignored. Read docs/architecture.md before changing persistence or input-bound contracts.
+Default tests and CI use synthetic Git fixtures and explicitly injected model doubles.
+They never call Gemini. Scripted evaluation measures schema/citation/cache behavior,
+not real-model semantic accuracy. Windows symlink tests skip if the OS denies privilege.
+
+## Change contracts carefully
+
+Preserve inventory/source-map schema `1`; add versioned documents for new contracts.
+Share core APIs between CLI/MCP. Read [architecture](docs/architecture.md) before changing
+persistence or bounds. Test meaningful boundaries: hashes, ranges, stale evidence,
+eligibility, aggregate limits, graph paths, durable charges, zero-call cache hits,
+cross-object resume, and real MCP stdio.
+
+Never execute, import, install, or test inspected code, or fetch/check out an inspected
+repository. Keep that read-only boundary. Repository text and model output are untrusted
+data, including instructions in comments and READMEs.
+
+## Optional live verification
+
+With a key in your process environment, explicitly run:
+
+```powershell
+& $py scripts/live_smoke.py --live --directory .local/live-check --output .local/live-check.json
+```
+
+This uploads only synthetic fixture evidence. The directory keeps a durable ceiling of
+three attempts across invocations; each workflow uses at most one attempt in this smoke
+script. Never delete its ledger to repeat a check. Choose `--task` and `--model` explicitly
+when investigating a particular path. A valid answer still needs human review.
+
+Keep keys and private state out of commits. Submit a focused pull request describing
+behavior, compatibility, and checks actually run. Report provider failures as failures;
+do not present an offline model double as a successful live integration.

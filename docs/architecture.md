@@ -10,7 +10,7 @@ metadata before/after. `python_parser.py` uses an iterative lexical AST traversa
 
 `evidence.py` builds overview and exact declaration excerpts; `history.py` resolves refs
 before reading committed endpoint trees and blobs. `product_models.py` keeps new documents
-separate from M01/M02 schemas. Reference IDs are `src:` plus a canonical SHA-256 of the
+separate from inventory/source-map schemas. Reference IDs are `src:` plus a canonical SHA-256 of the
 typed path/range/content/revision fields. Excerpts validate contiguous actual source lines.
 Deletion evidence does not depend on current filesystem existence. Historical custom
 virtual-environment marker detection is unavailable; shared known directory/filename and

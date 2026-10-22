@@ -21,10 +21,10 @@ jobs:
       - run: python -m pip install -e '.[ai,mcp,dev]'
       - run: python -m pip check
       - run: python -m pytest -q
-      - run: python -m ruff check src tests evals examples
-      - run: python -m ruff format --check src tests evals examples
+      - run: python -m ruff check src tests evals examples scripts
+      - run: python -m ruff format --check src tests evals examples scripts
       - run: python -m mypy src/repotrail
       - run: python -m evals.run --output .local/evaluation.json
       - run: python -m build
       - name: Clean wheel install outside source checkout
-        run: python examples/verify_wheel.py
+        run: python scripts/verify_wheel.py
