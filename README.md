@@ -94,7 +94,8 @@ key. Gemini is optional/experimental; supported models are listed in the [AI gui
 ## Install the full product
 
 Requires **Python 3.14.x** and **Git 2.48+**. Install from this repository; there is no PyPI
-release. Core commands need no API key. Install `.` for core only or `.[ai,mcp]` for both integrations.
+release. Core and default MCP commands need no API key. The commands below install `.[mcp]`;
+use `.` for core only or `.[ai,mcp]` to also install the optional provider/LangGraph integration.
 
 <details open>
 <summary>Windows / PowerShell</summary>
@@ -103,7 +104,7 @@ release. Core commands need no API key. Install `.` for core only or `.[ai,mcp]`
 git clone https://github.com/PuravDesai004/RepoTrail.git
 cd RepoTrail
 py -3.14 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install '.[ai,mcp]'
+.\.venv\Scripts\python.exe -m pip install '.[mcp]'
 $rt = '.\.venv\Scripts\repotrail.exe'
 & $rt --help
 ```
@@ -117,7 +118,7 @@ $rt = '.\.venv\Scripts\repotrail.exe'
 git clone https://github.com/PuravDesai004/RepoTrail.git
 cd RepoTrail
 python3.14 -m venv .venv
-.venv/bin/python -m pip install '.[ai,mcp]'
+.venv/bin/python -m pip install '.[mcp]'
 .venv/bin/repotrail --help
 ```
 
@@ -143,7 +144,10 @@ See the [CLI reference](docs/cli.md) for commands and exit codes.
 
 ## Optional AI analysis
 
+From the RepoTrail installation directory, add the AI extra before using provider mode:
+
 ```powershell
+.\.venv\Scripts\python.exe -m pip install '.[ai,mcp]'
 $env:GROQ_API_KEY = '<your-key>'
 & $rt explain C:/code/my-project --provider groq --task explain_project --json
 & $rt explain C:/code/my-project --provider groq --task review_diff --base-ref main --head-ref HEAD --json
@@ -158,11 +162,113 @@ Groq uses strict structured output with `openai/gpt-oss-20b` by default when sel
 The Gemini default remains available for compatibility; it never falls back to Groq.
 Gemini remains experimental; see the [AI guide](docs/ai.md) for configuration and limitations.
 
-## Use it from an agent or Python
+## Connect Codex or Claude Code through MCP — no API key
 
-Start the local MCP server with `repotrail mcp --repo /absolute/path/to/repository`.
-It exposes `get_project_overview`, `get_symbol_context`, and `summarize_changes`.
-AI tools require `--enable-ai`. See the [MCP guide](docs/mcp.md) for configuration and tools.
+MCP gives your agent callable RepoTrail tools. **Your current Codex or Claude Code model
+explains the returned evidence**; RepoTrail makes no model API calls in this default mode.
+Your host's normal account, model access, and usage limits still apply. The skill above
+and MCP are independent entry points; you can use either or both.
+
+### 1. Install the MCP extra
+
+Follow [Install the full product](#install-the-full-product) above, which includes `.[mcp]`.
+If you previously installed core only, run its pip command again with `'.[mcp]'`.
+Keep the RepoTrail installation separate from the repository you want to inspect.
+
+In the examples below, replace **both absolute paths**: RepoTrail's installed Python interpreter
+and your own local Git repository. Keep the quotes if a path contains spaces.
+The agent starts this local **stdio** process automatically; no server URL or port is needed.
+
+### 2a. Register with Codex
+
+Run in a terminal with the Codex CLI available:
+
+**Windows / PowerShell:**
+
+```powershell
+codex mcp add repotrail -- "C:/tools/RepoTrail/.venv/Scripts/python.exe" -m repotrail mcp --repo "C:/code/my-project"
+codex mcp list
+```
+
+**Linux / macOS:**
+
+```bash
+codex mcp add repotrail -- "/absolute/path/RepoTrail/.venv/bin/python" -m repotrail mcp --repo "/absolute/path/my-project"
+codex mcp list
+```
+
+Alternatively, add this table to `~/.codex/config.toml`, preserving existing settings:
+
+```toml
+[mcp_servers.repotrail]
+command = "C:/tools/RepoTrail/.venv/Scripts/python.exe"
+args = ["-m", "repotrail", "mcp", "--repo", "C:/code/my-project"]
+```
+
+For Linux/macOS, use the absolute interpreter/repository paths from the Bash example.
+Restart your Codex app, IDE extension, or CLI session after configuration. In the CLI,
+run `/mcp` to check the active tools. `codex mcp list` confirms registration; a successful
+tool call confirms the connection. See [official Codex MCP setup](https://developers.openai.com/codex/mcp/).
+
+### 2b. Register with Claude Code
+
+Open a terminal in the repository you want explained, then run:
+
+**Windows / PowerShell:**
+
+```powershell
+cd "C:/code/my-project"
+claude mcp add --transport stdio --scope local repotrail -- "C:/tools/RepoTrail/.venv/Scripts/python.exe" -m repotrail mcp --repo "C:/code/my-project"
+claude mcp get repotrail
+```
+
+**Linux / macOS:**
+
+```bash
+cd "/absolute/path/my-project"
+claude mcp add --transport stdio --scope local repotrail -- "/absolute/path/RepoTrail/.venv/bin/python" -m repotrail mcp --repo "/absolute/path/my-project"
+claude mcp get repotrail
+```
+
+`--scope local` keeps this registration private to you and available in that project.
+Start a new Claude Code session there and run `/mcp`; confirm `repotrail` is connected
+and its three tools are available. See [official Claude Code MCP setup](https://code.claude.com/docs/en/mcp).
+
+### 3. Ask your agent to use RepoTrail
+
+Enter a normal chat prompt in either host; MCP does not require a skill slash command:
+
+> Use RepoTrail's get_project_overview to explain this project's structure and entry points.
+> Cite the evidence and disclose any missing coverage.
+
+> Use RepoTrail's get_symbol_context for src/app.py, qualified_name App.run.
+> Explain it using your current model and cite its path and line numbers.
+
+> Use RepoTrail's summarize_changes between main and HEAD. Explain the changes and review
+> possible risks using your current model, with citations and coverage limits.
+
+Replace paths, qualified names, and refs with values present in your repository; use the
+overview's source map to find symbols. Both refs must exist locally. `summarize_changes`
+compares committed endpoints, so uncommitted edits are excluded. For paged whole-history
+explanations, use the [skill's `whole` / `through` workflow](docs/agent-skill.md).
+
+Each MCP process stays bound to the repository passed in `--repo`, even if you open another
+project. To change it, remove the registration and repeat setup with the new path:
+`codex mcp remove repotrail`, or `claude mcp remove repotrail --scope local` from the original
+Claude project. Alternatively, use a distinct server name for each repository.
+
+If tools do not appear, check both absolute paths, confirm `.[mcp]` is installed in that
+interpreter's environment, and restart the host. For startup diagnosis, run that Python
+with `-m repotrail mcp --repo YOUR_PATH` in a terminal: it waits for MCP input when healthy; stop it with
+Ctrl+C and let your host launch it. See the [MCP guide](docs/mcp.md) for configuration details.
+
+**Optional provider mode:** `--enable-ai --provider groq` adds `explain_project` and
+`review_diff`, which use LangGraph and your own `GROQ_API_KEY`. This requires the AI extra
+and deliberate credential forwarding; see the [AI guide](docs/ai.md). Leave `--enable-ai`
+out to keep explanations and reviews in your current agent. No key belongs in the default
+MCP configuration.
+
+## Use the Python API
 
 ```python
 from repotrail.evidence import get_project_overview, get_symbol_context

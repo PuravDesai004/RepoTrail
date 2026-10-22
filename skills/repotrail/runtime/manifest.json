@@ -2,7 +2,7 @@
   "schema_version": 1,
   "version": "1.1.0",
   "wheel": "repotrail-1.1.0-py3-none-any.whl",
-  "sha256": "1a12780be8a12222b6b1d419ccabf81a9b85641306ad9287a8e304199fd17796",
+  "sha256": "2282c071076dcc0c3039d9c66a782e9c136855f82b52f72266cbb142aba22a93",
   "python": "3.14",
   "default_mode": "current_agent_model"
 }
