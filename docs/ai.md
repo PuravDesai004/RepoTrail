@@ -1,43 +1,50 @@
-# Gemini configuration and troubleshooting
+# AI providers and troubleshooting
 
 Install `.[ai]` from the checkout in its own environment. AI runs only when explicitly
-requested by `explain` or an enabled AI MCP tool. Selected source is sent to Google;
+requested by `explain` or an enabled AI MCP tool. Selected source is sent to the chosen provider;
 review eligibility and contents before using private code. Deterministic commands need no key.
 
 ## Credentials and model
 
-PowerShell:
+Use `--provider groq` explicitly with your Groq key:
 
 ```powershell
-$env:GEMINI_API_KEY = '<your-key>'
-repotrail explain C:/code/project --task explain_project --json
-repotrail explain C:/code/project --task review_diff --base-ref main --head-ref HEAD --json
+$env:GROQ_API_KEY = '<your-key>'
+repotrail explain C:/code/project --provider groq --task explain_project --json
+repotrail explain C:/code/project --provider groq --task review_diff --base-ref main --head-ref HEAD --json
 ```
 
-Bash:
+In Bash, use `export GROQ_API_KEY='<your-key>'` and the same command flags. Use the installed
+executable from your environment, or activate it first.
 
-```bash
-export GEMINI_API_KEY='<your-key>'
-repotrail explain /path/to/project --task explain_project --json
-```
+| Provider | Credential | Default model | Other supported model IDs |
+| --- | --- | --- | --- |
+| `groq` | `GROQ_API_KEY` | `openai/gpt-oss-20b` | `openai/gpt-oss-120b` |
+| `gemini` (CLI default) | `GEMINI_API_KEY`, or `GOOGLE_API_KEY` | `gemini-3.8-flash` | `gemini-3.6-flash`, `gemini-3.5-flash-lite` |
 
-Use the installed executable from your environment, or activate it first.
-`GOOGLE_API_KEY` is also accepted; `GEMINI_API_KEY` takes precedence. RepoTrail reads the
-current process environment. A `.env` file alone does not configure it. PowerShell
-assignments such as `$env:GEMINI_API_KEY = '...'` are shell commands, not dotenv syntax.
-Use your shell or a trusted environment loader; never execute an inspected `.env` file.
+For Gemini, `GEMINI_API_KEY` takes precedence over `GOOGLE_API_KEY`. Provider/model pairs
+are validated; a key for one provider cannot enable another. Models/providers are never
+silently substituted. RepoTrail reads only the current process environment. A `.env` file
+alone does not configure it. Use your shell or a trusted environment loader; never execute
+an inspected `.env`. Keys are never passed as CLI arguments or saved in workflow state.
 
-`--model` explicitly selects `gemini-3.8-flash` (default), `gemini-3.6-flash`, or
-`gemini-3.5-flash-lite`. Models are never silently substituted. Account availability is
-required. See [Google's model documentation](https://ai.google.dev/gemini-api/docs/models).
-`GenerationConfig.thinking_level` defaults to `low` and participates in cache/resume identity.
-See [current live verification status](status.md).
+Groq uses LangChain's official adapter, `json_schema` with `strict=true`, all properties
+required, and singleton enums for literal constraints. The local Pydantic and citation
+checks still run. See [Groq structured outputs](https://console.groq.com/docs/structured-outputs).
+The Gemini finding schema also advertises an `inferred` enum, rather than relying only on
+JSON Schema `const`; observations and inferred review risks remain separate. No automatic
+label coercion is performed. See [Google structured outputs](https://ai.google.dev/gemini-api/docs/structured-output).
+
+`GenerationConfig.thinking_level` defaults to `low`. Provider, model, generation settings,
+backend, and prompt policy participate in cache/resume identity. Resume a Groq run with
+`--provider groq` and the same model/settings. See [live verification status](status.md).
 
 ## Budgets, grounding, and state
 
 Each workflow permits at most **two actual provider attempts**, including one repair or
-transient retry. `--max-attempts 1` lowers that limit. The adapter uses one total SDK request
-per attempt, a 30-second timeout, and a 1,500-token output limit. A durable charge precedes
+transient retry. `--max-attempts 1` lowers that limit. Groq SDK retries are disabled
+(`max_retries=0`); Gemini uses one total SDK attempt (`retries=1`). Both enforce a 30-second
+timeout and a 1,500-token output limit. A durable charge precedes
 the call; a crash can consume an attempt without a response. Billing is not exactly-once.
 Selected source and prompt/schema metadata each have a 32 KiB input limit.
 
@@ -66,7 +73,7 @@ prunes older runs and graph checkpoints. Remote tracing is disabled.
 | --- | --- |
 | Missing credentials | Export a valid key into the same process that launches RepoTrail. |
 | `provider_configuration` | Check key, model access, and request configuration; HTTP 400/401/403/404 is terminal. |
-| `provider_unavailable` | Google returned a 5xx service error. Try a later explicit run; never erase charges. |
+| `provider_unavailable` | The selected provider returned a 5xx service error. Try a later explicit run; never erase charges. |
 | `rate_limit` | Check account quota; a remaining graph attempt may retry once. |
 | `timeout` / `provider_connection` | Bounded request could not complete; check network/service access. |
 | `invalid_schema` / `invalid_output` | Response was rejected; a remaining graph attempt may repair it. |

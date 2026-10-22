@@ -28,8 +28,12 @@ plugin packaging require separate adapters.
 | `get_project_overview` | None | Observed structure, source map, declared scripts/dependencies, local history. |
 | `get_symbol_context` | `path`, `qualified_name`, optional `definition_line` | Exact declaration source and reference. |
 | `summarize_changes` | `base_ref`, `head_ref` | Committed endpoint comparison. |
-| `explain_project` | None; requires `--enable-ai` | Grounded Gemini project explanation. |
-| `review_diff` | `base_ref`, `head_ref`; requires `--enable-ai` | Grounded Gemini diff review. |
+| `explain_project` | None; requires `--enable-ai` | Grounded AI project explanation. |
+| `review_diff` | `base_ref`, `head_ref`; requires `--enable-ai` | Grounded AI diff review. |
+
+To use Groq, launch with `--enable-ai --provider groq`, forward `GROQ_API_KEY` through the
+server process environment, and optionally select `--model openai/gpt-oss-120b`.
+The default provider remains Gemini; no fallback occurs.
 
 Only enable AI deliberately, with the AI extra installed and credentials forwarded through
 the server process environment. It may spend quota and persist private source/model state.

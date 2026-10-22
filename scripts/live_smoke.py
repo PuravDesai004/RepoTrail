@@ -1,4 +1,4 @@
-"""Explicit synthetic Gemini smoke with a durable three-attempt ceiling per directory.
+"""Explicit synthetic provider smoke with a durable three-attempt ceiling per directory.
 
 This script spends provider quota only with --live. It never runs in offline CI.
 """
@@ -8,18 +8,17 @@ import json
 import sqlite3
 from pathlib import Path
 
-from repotrail.ai_models import SUPPORTED_MODELS, GenerationConfig
+from repotrail.ai_models import DEFAULT_MODELS, GenerationConfig
 from repotrail.demo import build_demo
-from repotrail.provider import GeminiGateway, ModelReply
+from repotrail.provider import ModelReply, create_model
 from repotrail.workflow import WorkflowService
 
 
 class SmokeBudgetGateway:
-    backend_id = "langchain-gemini"
-
     def __init__(self, directory: Path, configuration: GenerationConfig):
         self.directory = directory
         self.configuration = configuration
+        self.backend_id = f"langchain-{configuration.provider}"
         self.path = directory / "live_budget.sqlite3"
         with sqlite3.connect(self.path) as connection:
             connection.execute(
@@ -33,7 +32,7 @@ class SmokeBudgetGateway:
                 return ModelReply(None, "smoke_live_budget_exhausted", retryable=False)
             connection.execute("INSERT INTO charges(task) VALUES (?)", (task,))
         # A charge is durable before even constructing the network-capable adapter.
-        return GeminiGateway(self.configuration).invoke(task, messages, config)
+        return create_model(self.configuration).invoke(task, messages, config)
 
 
 def main():
@@ -41,7 +40,8 @@ def main():
     parser.add_argument("--live", action="store_true", required=True)
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--model", choices=SUPPORTED_MODELS, default="gemini-3.8-flash")
+    parser.add_argument("--provider", choices=["gemini", "groq"], default="gemini")
+    parser.add_argument("--model")
     parser.add_argument(
         "--task", choices=["explain_project", "review_diff", "both"], default="both"
     )
@@ -56,7 +56,9 @@ def main():
     else:
         base, head = build_demo(fixture)
         marker.write_text(json.dumps({"base": base, "head": head}), encoding="utf-8")
-    configuration = GenerationConfig(max_attempts=1, model=args.model)
+    configuration = GenerationConfig(
+        provider=args.provider, model=args.model or DEFAULT_MODELS[args.provider], max_attempts=1
+    )
     gateway = SmokeBudgetGateway(directory, configuration)
     results = []
     with WorkflowService(
@@ -72,6 +74,7 @@ def main():
         "smoke_live_charges": charges,
         "smoke_limit": 3,
         "model": configuration.model,
+        "provider": configuration.provider,
         "results": results,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

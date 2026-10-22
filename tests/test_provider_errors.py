@@ -3,9 +3,10 @@
 import pytest
 
 from repotrail.ai_models import GenerationConfig
-from repotrail.provider import GeminiGateway
+from repotrail.provider import GeminiGateway, GroqGateway
 
 
+@pytest.mark.parametrize("gateway_type", [GeminiGateway, GroqGateway])
 @pytest.mark.parametrize(
     "code,expected",
     [
@@ -16,7 +17,7 @@ from repotrail.provider import GeminiGateway
         (503, "provider_unavailable"),
     ],
 )
-def test_wrapped_provider_status_is_classified_and_sanitized(code, expected):
+def test_wrapped_provider_status_is_classified_and_sanitized(code, expected, gateway_type):
     class Inner(Exception):
         pass
 
@@ -29,7 +30,7 @@ def test_wrapped_provider_status_is_classified_and_sanitized(code, expected):
             error.code = code
             raise RuntimeError("SENSITIVE_FAKE_KEY_MUST_NEVER_APPEAR") from error
 
-    gateway = object.__new__(GeminiGateway)
+    gateway = object.__new__(gateway_type)
     gateway.client = Adapter()
     result = gateway.invoke("explain_project", [], GenerationConfig())
     assert result.error_code == expected
@@ -37,7 +38,8 @@ def test_wrapped_provider_status_is_classified_and_sanitized(code, expected):
     assert result.retryable == (code in (429, 503))
 
 
-def test_adapter_timeout_is_typed():
+@pytest.mark.parametrize("gateway_type", [GeminiGateway, GroqGateway])
+def test_adapter_timeout_is_typed(gateway_type):
     class Adapter:
         def with_structured_output(self, *args, **kwargs):
             return self
@@ -45,7 +47,7 @@ def test_adapter_timeout_is_typed():
         def invoke(self, *args, **kwargs):
             raise TimeoutError("private request text")
 
-    gateway = object.__new__(GeminiGateway)
+    gateway = object.__new__(gateway_type)
     gateway.client = Adapter()
     result = gateway.invoke("review_diff", [], GenerationConfig())
     assert result.error_code == "timeout" and "private request" not in repr(result)

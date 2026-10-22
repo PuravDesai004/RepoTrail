@@ -31,7 +31,7 @@ def main():
     python = environment_path / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     console = environment_path / ("Scripts/repotrail.exe" if os.name == "nt" else "bin/repotrail")
     environment = dict(os.environ)
-    for name in ("PYTHONPATH", "GEMINI_API_KEY", "GOOGLE_API_KEY"):
+    for name in ("PYTHONPATH", "GEMINI_API_KEY", "GOOGLE_API_KEY", "GROQ_API_KEY"):
         environment.pop(name, None)
     environment["LANGSMITH_TRACING"] = "false"
     outside = project.parent
@@ -106,6 +106,49 @@ def main():
         )
     )
     assert resumed["status"] == "failed" and resumed["attempts"] == 0
+    groq_paused = json.loads(
+        checked(
+            [
+                str(console),
+                "explain",
+                str(fixture),
+                "--provider",
+                "groq",
+                "--run-id",
+                "wheel-groq",
+                "--pause-before-generate",
+                "--state-dir",
+                str(directory / "groq-state"),
+                "--json",
+            ],
+            cwd=outside,
+            environment=environment,
+            allowed=(1,),
+        )
+    )
+    assert groq_paused["status"] == "interrupted" and groq_paused["attempts"] == 0
+    groq_resumed = json.loads(
+        checked(
+            [
+                str(console),
+                "resume",
+                str(fixture),
+                "wheel-groq",
+                "--provider",
+                "groq",
+                "--state-dir",
+                str(directory / "groq-state"),
+                "--json",
+            ],
+            cwd=outside,
+            environment=environment,
+            allowed=(1,),
+        )
+    )
+    assert groq_resumed["status"] == "failed" and groq_resumed["attempts"] == 0
+    checked(
+        [str(python), "-I", "-c", "import langchain_groq"], cwd=outside, environment=environment
+    )
     checked(
         [str(python), str(project / "examples" / "mcp_client.py"), str(fixture)],
         cwd=outside,
@@ -119,6 +162,7 @@ def main():
         "core_only_overview": "passed",
         "console_and_module": "passed",
         "ai_checkpoint_resume_missing_key": "passed",
+        "groq_installed_adapter_and_resume_missing_key": "passed",
         "mcp_official_stdio_client": "passed",
         "pip_check": "passed",
         "extras": ["ai", "mcp"],

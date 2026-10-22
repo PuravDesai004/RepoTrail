@@ -1,42 +1,61 @@
 # Verification and release status
 
-The deterministic CLI, Python API, and local MCP tools are implemented. Optional Gemini
-analysis is **experimental** until live explanation and review pass their acceptance checks.
-Offline correctness checks and real-provider results are tracked separately.
+The deterministic CLI, Python API, and local MCP tools are implemented. Groq-backed
+project explanation, change explanation, and diff review have passed bounded real-provider
+checks. Gemini remains experimental: its schema/prompt correction is covered offline,
+while successful generation with that provider has not been revalidated.
 
-## Verified
+## Groq acceptance — 22 October 2026
 
-- Windows and Ubuntu Python 3.14 CI passed the complete offline suite, lint/format checks,
-  type checking, scripted grounding/cache evaluation, builds, and clean wheel installation.
-- The installed-wheel check exercises core-only commands before installing AI/MCP extras,
-  then checkpoint pause/resume without credentials and the official MCP stdio client.
-- Offline tests cover schema/citation rejection, bounded repair, durable charges, cache
-  invalidation, zero-call cache hits, and stale cross-object resume. Default CI is keyless.
+The explicitly selected provider/model was `groq` / `openai/gpt-oss-20b` using strict
+structured output. Only synthetic fixture source was uploaded.
 
-The README CI badge links to current branch results. These checks use synthetic fixtures
-and injected models; they do not demonstrate real-model accuracy. macOS and a particular
-desktop MCP host have not been tested.
+| Final workflow | Observed result | Recreated-service cache check |
+| --- | --- | --- |
+| Project explanation | Accepted schema and registered citations; completed. | Hit, zero provider calls. |
+| Change explanation | Accepted schema/citations; explicitly incomplete because binary evidence is unavailable. | Hit, zero provider calls. |
+| Diff review | Accepted schema/citations; identified the fractional-discount regression and disclosed unavailable binary contents. | Hit, zero provider calls. |
 
-## Live Gemini check — 22 October 2026
+The review explained that `[10, 20]` with a fractional discount of `0.1` should produce
+`27.0`, while the changed subtraction formula produces `29.9`. Its finding remained an
+inference with references to the old/new source. Explanation spot-checks confirmed the
+package declaration, entry point, and supplied pricing implementation.
 
-| Task / explicitly selected model | Observed result |
-| --- | --- |
-| Project explanation / `gemini-3.8-flash` | HTTP 503 high demand; `provider_unavailable`; no answer. |
-| Diff review / `gemini-3.8-flash` | HTTP 503 high demand; `provider_unavailable`; no answer. |
-| Diff review / `gemini-3.5-flash-lite` | Output/usage received; structured response rejected as `invalid_schema`; no accepted answer. |
+The round used six charged attempts including prompt refinement and one rejected HTTP400
+change-explanation request. Each final successful workflow used one attempt. The ledger
+was preserved; no provider fallback or budget reset occurred. Missing usage on a failed
+request is not evidence of zero cost. Cache checks make no extra requests.
 
-Each check used one charged attempt on synthetic source. No automatic fallback occurred.
-No successful live explanation or review is claimed.
+This is a fixture-based acceptance check, not a general semantic-accuracy benchmark.
+Model prose can still misstate names or mix observations with interpretation; returned
+citation metadata is authoritative for paths/ranges, and users should review the source.
 
-## Remaining acceptance gates
+## Offline and delivery checks
 
-1. Diagnose the live structured-response failure and obtain schema/citation-valid
-   explanation and review using a real supported Gemini model within an explicit budget.
-2. Review answers against the known fixture: explanation must match source; review should
-   identify the fractional-discount regression and acknowledge incomplete evidence.
-3. Verify live cache reuse makes zero additional calls and retain reproducible sanitized
-   integration evidence. Offline tests already exercise this behavior.
+Windows and Ubuntu Python3.14 CI previously passed the full offline suite, lint/format,
+type checks, scripted grounding/cache evaluation, builds, and clean wheel installation.
+The README badge links to the latest branch results; consult that run before assuming
+that a newer commit passed remotely. Default tests/CI are keyless and use injected models.
 
-After these gates pass, AI can leave experimental status. Core-only use is available now.
-PyPI publication, broader Python support, macOS CI, desktop-specific MCP packaging, a web UI,
-and other languages are separate future work, not required for the current local tool.
+The installed-wheel check exercises core-only commands before AI/MCP extras, then
+checkpoint pause/resume without credentials and the official MCP stdio client outside
+the checkout. Provider regressions verify strict schemas, SDK attempt settings, provider
+identity, invalid basis rejection, and sanitized failures. macOS and a particular desktop
+MCP host have not been tested.
+
+## Gemini status
+
+Earlier default-model requests returned HTTP503 high demand. A diagnostic Flash Lite
+response finished normally but labeled a review finding `observed`; the contract requires
+`inferred`. The schema now includes the supported singleton enum and explicit descriptions,
+and the prompt separates observed edits from inferred findings. Local validation remains
+strict and never relabels a response automatically. Gemini has not been retested live after
+this correction; no successful Gemini integration is claimed.
+
+## Scope of v1
+
+The requested Groq explanation/review/cache acceptance gates are complete. Treat AI as
+advisory interpretation over bounded source, and inspect diagnostics on incomplete results.
+A demo of the local evidence tool and its verified Groq integration is ready to share.
+PyPI publication, broader Python support, macOS CI, desktop-specific MCP packaging, a web
+UI, other languages, and renewed Gemini acceptance are future work.

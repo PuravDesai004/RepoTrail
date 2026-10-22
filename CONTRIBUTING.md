@@ -33,7 +33,7 @@ core API, checkpoint resume, and official MCP client outside the checkout. It ne
 network access for dependencies. Never install into an inspected repository.
 
 Default tests and CI use synthetic Git fixtures and explicitly injected model doubles.
-They never call Gemini. Scripted evaluation measures schema/citation/cache behavior,
+They never call providers. Scripted evaluation measures schema/citation/cache behavior,
 not real-model semantic accuracy. Windows symlink tests skip if the OS denies privilege.
 
 ## Change contracts carefully
@@ -58,7 +58,7 @@ With a key in your process environment, explicitly run:
 
 This uploads only synthetic fixture evidence. The directory keeps a durable ceiling of
 three attempts across invocations; each workflow uses at most one attempt in this smoke
-script. Never delete its ledger to repeat a check. Choose `--task` and `--model` explicitly
+script. Never delete its ledger to repeat a check. Choose `--provider`, `--task`, and `--model` explicitly
 when investigating a particular path. A valid answer still needs human review.
 
 Keep keys and private state out of commits. Submit a focused pull request describing

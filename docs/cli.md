@@ -13,7 +13,7 @@ Unicode for Windows console compatibility.
 | `context ROOT PATH QUALIFIED_NAME [--definition-line N]` | Exact declaration, numbered lines, hash, and citation. |
 | `history ROOT [--ref HEAD] [--limit 20]` | Bounded local commit metadata. |
 | `changes ROOT BASE HEAD` | Committed endpoint trees, statuses, patches, and symbol overlap. |
-| `explain ROOT [--task TASK]` | Explicit Gemini workflow; default `explain_project`. |
+| `explain ROOT [--task TASK]` | Explicit AI workflow; default `explain_project`. |
 | `resume ROOT RUN_ID` | Continue a persisted workflow after checking evidence/configuration. |
 | `cache-prune ROOT [--keep 100]` | Prune older app runs/cache and corresponding graph checkpoints. |
 | `demo DESTINATION` | Synthetic two-commit repository in a new or empty directory. |
@@ -27,7 +27,7 @@ as deletion plus addition. It never fetches or checks out revisions.
 ## AI arguments
 
 `explain --task` accepts `explain_project`, `explain_changes`, and `review_diff`.
-Change tasks require `--base-ref REF --head-ref REF`. `--model`, `--state-dir`, and
+Change tasks require `--base-ref REF --head-ref REF`. `--provider {gemini,groq}`, `--model`, `--state-dir`, and
 `--max-attempts {1,2}` configure a run. Pause before any provider request:
 
 ```powershell
@@ -35,7 +35,7 @@ repotrail explain C:/code/project --run-id review-session --pause-before-generat
 repotrail resume C:/code/project review-session --json
 ```
 
-Resume with the same model, attempt setting, repository, source, and comparison refs.
+Resume with the same provider, model, attempt setting, repository, source, and comparison refs.
 Changes reject the checkpoint as stale. IDs cannot erase charges. See [AI configuration](ai.md).
 
 ## Exit codes

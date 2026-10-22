@@ -8,10 +8,12 @@ from .product_models import EvidenceDiagnostic, SourceExcerpt, SourceReference
 from .source_models import SourceModel
 
 Task = Literal["explain_project", "explain_changes", "review_diff"]
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "3"
 OUTPUT_VERSION = "1"
 SELECTION_VERSION = "1"
 SUPPORTED_MODELS = ("gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite")
+GROQ_MODELS = ("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+DEFAULT_MODELS = {"gemini": SUPPORTED_MODELS[0], "groq": GROQ_MODELS[0]}
 
 
 class AIConfigurationError(Exception):
@@ -19,7 +21,7 @@ class AIConfigurationError(Exception):
 
 
 class GenerationConfig(SourceModel):
-    provider: Literal["gemini"] = "gemini"
+    provider: Literal["gemini", "groq"] = "gemini"
     model: str = "gemini-3.8-flash"
     max_attempts: int = Field(default=2, ge=1, le=2)
     timeout_seconds: float = Field(default=30.0, gt=0, le=30)
@@ -32,11 +34,22 @@ class GenerationConfig(SourceModel):
     output_version: str = OUTPUT_VERSION
     selection_version: str = SELECTION_VERSION
 
+    @model_validator(mode="before")
+    @classmethod
+    def provider_default_model(cls, value: Any) -> Any:
+        if isinstance(value, dict) and "model" not in value:
+            return {
+                **value,
+                "model": DEFAULT_MODELS.get(value.get("provider", "gemini"), SUPPORTED_MODELS[0]),
+            }
+        return value
+
     @model_validator(mode="after")
     def supported_configuration(self) -> Self:
-        if self.model not in SUPPORTED_MODELS:
+        models = GROQ_MODELS if self.provider == "groq" else SUPPORTED_MODELS
+        if self.model not in models:
             raise ValueError(
-                "Use an explicitly supported stable Gemini Flash ID; latest/preview aliases are unsupported."
+                "Use an explicitly supported model ID for the selected provider; aliases are unsupported."
             )
         return self
 
@@ -75,7 +88,11 @@ class ReviewFinding(SourceModel):
     citations: list[str] = Field(min_length=1, max_length=8)
     reasoning: str = Field(min_length=1, max_length=1500)
     suggested_validation: str = Field(min_length=1, max_length=1000)
-    basis: Literal["inferred"] = "inferred"
+    basis: Literal["inferred"] = Field(
+        default="inferred",
+        description="A review finding is an inferred risk; observed edits belong in observations.",
+        json_schema_extra={"enum": ["inferred"]},
+    )
 
 
 class DiffReview(SourceModel):

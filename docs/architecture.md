@@ -31,10 +31,15 @@ to 32 KiB. Overflow fails before a provider attempt. Repair can fail if prior ou
 longer fits; this is explicit, never an unbounded prompt. Selection is deterministic and
 does not claim coverage of all files. Duplicate selected IDs are removed.
 
-`GenerationConfig` is secret-free. `create_model` constructs the single real Gemini
+`GenerationConfig` is secret-free. `create_model` constructs the explicitly selected Gemini or Groq
 adapter from process credentials only. LangChain supplies prompt messages and structured
 Pydantic output; there are no execution/search/write tools. The SDK's installed retry
 semantics make `retries=1` one total request. LangSmith tracing is disabled at invocation.
+Groq uses its official LangChain adapter with SDK retries disabled (`max_retries=0`),
+strict structured output, required properties, and singleton enums. Provider/model pairs
+and backend IDs are distinct in cache/checkpoint fingerprints. The prompt policy specifies
+inferred-only review findings and distinguishes omitted excerpts from absent code.
+Local Pydantic and citation checks remain mandatory for either provider.
 Provider failures return stable codes and exception class names, never raw exception text.
 The reasoning level defaults to `low`, which the configured stable Flash models support;
 Gemini 3.8 Flash rejects `minimal`. This setting is explicit in GenerationConfig and thus

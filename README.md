@@ -17,8 +17,8 @@ Inspected code is never imported, executed, installed, tested, or modified.
 - **Inspect changes:** compare two local commits with patches, historical references,
   and overlapping Python symbols.
 - **Connect an agent:** expose the same APIs through a repository-bound MCP server.
-- **Opt into Gemini:** explanations and diff reviews with checked citations, bounded
-  attempts, local cache, and resumable runs. **AI integration is experimental.**
+- **Opt into AI:** explanations and diff reviews through explicitly selected Groq or Gemini,
+  with checked citations, bounded attempts, local cache, and resumable runs.
 
 ## Install
 
@@ -83,23 +83,22 @@ For your repository, replace `.local/demo` with its Git working-tree root:
 committed trees**. Omit `--json` for human-readable output.
 See the [CLI reference](docs/cli.md) for commands and exit codes.
 
-## Optional Gemini analysis
+## Optional AI analysis
 
 ```powershell
-$env:GEMINI_API_KEY = '<your-key>'
-& $rt explain .local/demo --task explain_project --json
-& $rt explain .local/demo --task review_diff --base-ref HEAD~1 --head-ref HEAD --json
+$env:GROQ_API_KEY = '<your-key>'
+& $rt explain .local/demo --provider groq --task explain_project --json
+& $rt explain .local/demo --provider groq --task review_diff --base-ref HEAD~1 --head-ref HEAD --json
 ```
 
-AI sends selected eligible excerpts to Google. Each run permits at most two provider
+AI sends selected eligible excerpts to your explicitly selected provider. Each run permits at most two provider
 attempts; citations are checked against retained evidence. Read the [AI guide](docs/ai.md)
 before using private source. Credentials come from the process environment; `.env` files
 are not loaded automatically.
 
-**Current limitation:** successful live explanation and review have not yet been validated.
-Latest default-model checks returned HTTP 503; an explicit Flash Lite check returned output
-that failed schema validation. Deterministic tools and offline workflow checks pass.
-See [verification and release status](docs/status.md) for remaining acceptance gates.
+Groq uses strict structured output with `openai/gpt-oss-20b` by default when selected.
+The Gemini default remains available for compatibility; it never falls back to Groq.
+See [verification and release status](docs/status.md) for actual provider results and limits.
 
 ## Use it from an agent or Python
 

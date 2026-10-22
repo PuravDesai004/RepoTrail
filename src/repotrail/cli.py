@@ -9,7 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
-from .ai_models import AIConfigurationError, GenerationConfig
+from .ai_models import DEFAULT_MODELS, AIConfigurationError, GenerationConfig
 from .analysis import analyze_python_repository
 from .evidence import get_project_overview, get_symbol_context
 from .git import InventoryError
@@ -28,7 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         "context": "retrieve exact verified declaration source",
         "history": "read bounded local commit metadata",
         "changes": "compare two committed endpoint trees",
-        "explain": "explicitly request a grounded Gemini analysis",
+        "explain": "explicitly request a grounded AI analysis",
         "resume": "resume a persistent analysis run",
         "cache-prune": "prune old local analysis state",
     }.items():
@@ -49,7 +49,8 @@ def build_parser() -> argparse.ArgumentParser:
             command.add_argument("head_ref")
         if name in ("explain", "resume", "cache-prune"):
             command.add_argument("--state-dir", type=Path)
-            command.add_argument("--model", default="gemini-3.8-flash")
+            command.add_argument("--provider", choices=["gemini", "groq"], default="gemini")
+            command.add_argument("--model")
         if name == "explain":
             command.add_argument(
                 "--task",
@@ -73,7 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.add_argument("--repo", required=True)
     mcp.add_argument("--enable-ai", action="store_true")
     mcp.add_argument("--state-dir", type=Path)
-    mcp.add_argument("--model", default="gemini-3.8-flash")
+    mcp.add_argument("--provider", choices=["gemini", "groq"], default="gemini")
+    mcp.add_argument("--model")
     return parser
 
 
@@ -131,7 +133,9 @@ def execute(args):
             args.repo,
             enable_ai=args.enable_ai,
             state_dir=args.state_dir,
-            config=GenerationConfig(model=args.model),
+            config=GenerationConfig(
+                provider=args.provider, model=args.model or DEFAULT_MODELS[args.provider]
+            ),
         ).run(transport="stdio")
         return None, 0
     else:
@@ -142,7 +146,9 @@ def execute(args):
                 "Install the AI extra: pip install 'repotrail[ai]'."
             ) from exc
         configuration = GenerationConfig(
-            model=args.model, max_attempts=getattr(args, "max_attempts", 2)
+            provider=args.provider,
+            model=args.model or DEFAULT_MODELS[args.provider],
+            max_attempts=getattr(args, "max_attempts", 2),
         )
         with WorkflowService(root, config=configuration, state_dir=args.state_dir) as service:
             if args.command == "cache-prune":

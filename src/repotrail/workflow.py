@@ -88,7 +88,9 @@ class WorkflowService:
             )
         self.store = StateStore(directory)
         self.model = model
-        self.backend = model.backend_id if model is not None else "langchain-gemini"
+        self.backend = (
+            model.backend_id if model is not None else f"langchain-{self.config.provider}"
+        )
         self.connection = sqlite3.connect(
             self.store.checkpoint_path, check_same_thread=False, timeout=5
         )
