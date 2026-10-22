@@ -1,0 +1,7 @@
+{
+  "fixture": "repotrail.demo.build_demo",
+  "structure": {"required_facts": ["tiny-shop", "pricing:main", "total_price"], "allowed_paths": ["README.md", "pyproject.toml", "pricing.py", "added module.py", "working only.py"]},
+  "changes": {"required_facts": ["sum(prices) - discount", "no_renames_delete_add"], "required_paths": ["pricing.py", "notes old.txt", "notes new Ω.txt"]},
+  "review": {"known_inferred_issue": "A fractional discount is subtracted as an amount", "suggested_validation": "Check [10, 20] with 0.1: fractional interpretation expects 27, changed formula yields 29.9", "allowed_path": "pricing.py", "minimum_findings": 0},
+  "note": "Scripted answers test orchestration and reference validation, not Gemini semantic accuracy. Source is never executed."
+}
