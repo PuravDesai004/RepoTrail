@@ -17,12 +17,14 @@ $env:TEMP = Join-Path $PWD '.local/tmp'
 $env:TMP = $env:TEMP
 $env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
 & $py -m pytest -q
-& $py -m ruff check src tests evals examples scripts
-& $py -m ruff format --check src tests evals examples scripts
+& $py -m ruff check src tests evals examples scripts skills
+& $py -m ruff format --check src tests evals examples scripts skills
 & $py -m mypy src/repotrail
 & $py -m evals.run --output .local/evaluation.json
 & $py -m pip check
 & $py -m build
+& $py scripts/build_skill.py --check
+& $py scripts/verify_skill.py
 & $py scripts/verify_wheel.py
 ```
 
@@ -35,6 +37,12 @@ network access for dependencies. Never install into an inspected repository.
 Default tests and CI use synthetic Git fixtures and explicitly injected model doubles.
 They never call providers. Scripted evaluation measures schema/citation/cache behavior,
 not real-model semantic accuracy. Windows symlink tests skip if the OS denies privilege.
+
+If application or bundled skill files change, rebuild the current wheel and then run
+`scripts/build_skill.py --wheel dist/repotrail-1.1.0-py3-none-any.whl` before tests and the
+final build. Commit the explicit skill bundle and checksum together. The extracted-skill
+verifier installs only in disposable directories and checks both host launchers without
+starting an agent or calling a provider. See the [skill guide](docs/agent-skill.md).
 
 ## Change contracts carefully
 

@@ -20,7 +20,27 @@ Inspected code is never imported, executed, installed, tested, or modified.
 - **Opt into AI:** explanations and diff reviews through explicitly selected Groq or Gemini,
   with checked citations, bounded attempts, local cache, and resumable runs.
 
-## Install
+## Use your agent's model — no API key
+
+Download the [RepoTrail skill ZIP](downloads/repotrail-skill.zip), extract it and run
+`python repotrail/install.py --host codex` or `--host claude`. With Python 3.14 and Git
+available, the skill automatically prepares its isolated core runtime on first use.
+
+```text
+$repotrail C:/code/gridcast commit HEAD~2
+/repotrail /home/me/gridcast whole
+```
+
+Codex uses `$repotrail`; Claude Code uses `/repotrail`. Your current agent model explains
+the evidence. Commit snapshots and paged available-history explanations need no separate
+provider key. See the [skill guide](docs/agent-skill.md) for setup, scope and coverage limits.
+
+Use the **full product** below for more control, structured validation, caching and the
+resumable LangGraph/API workflow. Performance depends on the model and repository; the
+skill is the convenient entry point. Groq is the recommended API option, using your own
+key. Gemini is optional/experimental; supported models are listed in the [AI guide](docs/ai.md).
+
+## Install the full product
 
 Requires **Python 3.14.x** and **Git 2.48+**. Install from this repository; there is no PyPI
 release. Core commands need no API key. Install `.` for core only or `.[ai,mcp]` for both integrations.
@@ -136,6 +156,8 @@ tests/          Offline contract, workflow, and integration tests
 evals/          Scripted grounding and cache evaluation
 examples/       MCP client and host configuration example
 scripts/        Opt-in live smoke and clean wheel verification
+skills/         Portable Codex / Claude Code skill and bundled engine
+downloads/      Verified skill ZIP and SHA-256 checksum
 docs/           Usage, configuration, architecture, and release status
 .github/        Windows and Ubuntu CI
 ```

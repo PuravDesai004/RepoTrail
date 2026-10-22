@@ -3,6 +3,7 @@
 import json
 import os
 import subprocess
+import tomllib
 import venv
 from pathlib import Path
 from uuid import uuid4
@@ -21,9 +22,10 @@ def checked(args, *, cwd, environment, allowed=(0,)):
 
 def main():
     project = Path(__file__).resolve().parents[1]
-    wheels = sorted((project / "dist").glob("repotrail-*.whl"))
-    if len(wheels) != 1:
-        raise RuntimeError("Build exactly one current wheel in dist first.")
+    version = tomllib.loads((project / "pyproject.toml").read_text())["project"]["version"]
+    wheels = [project / "dist" / f"repotrail-{version}-py3-none-any.whl"]
+    if not wheels[0].is_file():
+        raise RuntimeError("Build the current project version's wheel in dist first.")
     directory = project / ".local" / "wheel-tests" / uuid4().hex
     directory.mkdir(parents=True)
     environment_path = directory / "environment"

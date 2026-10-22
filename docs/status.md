@@ -32,6 +32,12 @@ citation metadata is authoritative for paths/ranges, and users should review the
 
 ## Offline and delivery checks
 
+Version 1.1 adds a downloadable native-model skill for Codex and Claude Code. Its installer
+and keyless launcher have automated checks; actual host UI discovery and Claude session
+invocation remain manual validation. The skill inherits the current session model and does
+not distribute provider keys. See the [skill guide](agent-skill.md) for prerequisites,
+whole-history coverage limits and the full-product/API tradeoff.
+
 Windows and Ubuntu Python3.14 CI previously passed the full offline suite, lint/format,
 type checks, scripted grounding/cache evaluation, builds, and clean wheel installation.
 The README badge links to the latest branch results; consult that run before assuming

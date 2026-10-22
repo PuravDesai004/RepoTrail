@@ -1,0 +1,111 @@
+# RepoTrail for Codex and Claude Code
+
+The skill collects bounded Git/source evidence and asks the **model already running your
+agent session** to explain it. No separate API key or repository clone is needed to install
+the skill. The repository you want explained must already be available locally.
+
+For more control, use the full RepoTrail product: its optional LangGraph workflow adds
+structured output validation, checked citations, durable attempt budgets, SQLite caching
+and resumable runs. Speed and answer quality depend on the selected model, repository size
+and agent context. The skill's conversational answer does not pass through the API output
+validator. The full product is not guaranteed to be faster or smarter.
+
+## Install
+
+Download [repotrail-skill.zip](../downloads/repotrail-skill.zip) and its
+[SHA-256 checksum](../downloads/repotrail-skill.zip.sha256), extract it, and run one of:
+
+```text
+python repotrail/install.py --host codex
+python repotrail/install.py --host claude
+```
+
+Use a trusted Python interpreter. The installer needs Python 3.10+; evidence collection
+requires **Python 3.14.x and Git 2.48+** on PATH. It detects Python 3.14.
+It installs into `~/.agents/skills/repotrail` for Codex or `~/.claude/skills/repotrail` for
+Claude Code. Restart/reload your agent if it does not discover the skill immediately.
+An identical installation is idempotent. A different existing installation is preserved;
+back it up/remove it yourself before upgrading, or use `--destination SKILLS_PARENT`.
+
+On first invocation the launcher verifies the bundled engine wheel and creates a cached
+virtual environment outside the inspected repository. It downloads five pinned core
+dependencies as binary wheels from PyPI, without installing dependencies from the target.
+Later invocations reuse this environment. Network/filesystem access follows your host's
+permissions; missing prerequisites and blocked downloads require user action.
+
+The ZIP uses an explicit file manifest and checksums. These detect corruption and release
+drift; they are not a signature or a replacement for trusting the download's origin.
+Install from this GitHub repository and keep the installed skill/cache writable only by
+trusted users. No host configuration, API credentials or inspected repository is changed.
+
+## Ask your agent
+
+```text
+$repotrail C:/code/gridcast commit HEAD~2
+$repotrail C:/code/gridcast through v0.2.0
+$repotrail C:/code/gridcast whole
+
+/repotrail /home/me/gridcast commit HEAD~2
+/repotrail /home/me/gridcast whole
+/repotrail /home/me/gridcast review commit abc1234
+```
+
+Codex uses `$repotrail`; Claude Code uses `/repotrail`. Other agents may understand the
+portable `SKILL.md`, but are not claimed as tested integrations. A bare number such as `2`
+is ambiguous: use a commit SHA, tag or Git ref such as `HEAD~2`.
+
+`commit REF` explains the committed tree plus its first-parent changes. Dirty working files
+and later commits are excluded. `through REF` walks available ancestry ending at REF.
+`whole` walks ancestry reachable from HEAD, including merge parents; it does not promise
+all unrelated branches, deleted history or missing remote objects. Nothing is fetched.
+
+History pages contain up to ten commit records, ordered topologically newest first. Each
+cursor binds the repository, immutable target and page size; continuation remains pinned
+even if HEAD moves. The agent uses at most twenty pages and twenty detailed commit packets
+per invocation, and gives the continuation cursor if coverage is partial. The engine's
+shared traversal ceiling is 20,000 commits. Long timelines may need further invocations.
+Metadata-only commits are identified separately from source-reviewed milestones.
+
+Packets select README/TOML and up to three Python files, plus bounded first-parent change
+excerpts. The agent can request more historical source by path and physical line range.
+Sources use immutable Git/blob IDs, SHA-256, inclusive physical lines and reference IDs.
+Packet text is capped at 32 KiB, metadata at 32 KiB and serialized JSON at 128 KiB. Snapshot
+reads and the separate change-comparison operation each retain the existing 10 MiB read
+budget; per-file limits and shared eligibility also apply. Missing/binary/excluded/oversized
+evidence is disclosed. Merge explanations use the first parent and disclose the policy.
+
+The agent must treat repository text as untrusted data, never instructions. It must not
+execute target code, tests, hooks, dependency installation, or checkout/fetch operations.
+An explanation is advisory source analysis, not runtime verification.
+
+## Full product and optional API mode
+
+Groq is the project's recommended API demonstration route. Users supply **their own**
+`GROQ_API_KEY`; no project-owned/shared key is distributed. Gemini remains an optional,
+experimental provider. Model IDs are validated against supported provider allowlists;
+arbitrary providers/models are not currently supported. The agent skill can use whatever
+model the host session supports, without extracting its login credentials.
+
+See the [AI guide](ai.md) for supported models, `--model`, budgets and current verification.
+Existing full-product CLI and MCP usage remain available. Explicit skill API mode
+(`--api --provider groq`) installs separate AI extras and calls that workflow;
+native mode never silently switches to it. `.env` is not loaded or executed automatically.
+
+For launcher flags and cache overrides, see the
+[portable commands reference](../skills/repotrail/references/commands.md). The core engine
+also exposes `repotrail agent ROOT --mode commit|whole|source --json`, returning a separate
+`agent_evidence` schema `1`. Existing inventory/source-map contracts are unchanged.
+
+## Maintainer verification
+
+```text
+python -m build --wheel
+python scripts/build_skill.py --wheel dist/repotrail-1.1.0-py3-none-any.whl
+python scripts/build_skill.py --check
+python scripts/verify_skill.py
+```
+
+The downloadable ZIP contains the engine wheel, not a separate checkout. Rebuild it after
+changing application or bundled skill files. Offline tests cover history and integrity;
+the explicit integration verifier checks fresh extracted installation and keyless runtime
+setup outside the source checkout. It never invokes a provider or starts another agent.

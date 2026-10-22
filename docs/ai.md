@@ -6,6 +6,13 @@ review eligibility and contents before using private code. Deterministic command
 
 ## Credentials and model
 
+For the simplest setup, the [agent skill](agent-skill.md) uses the host session's current
+model without a separate API key. Prefer the full product for explicit model configuration,
+structured validation, caching and resumable LangGraph runs. Speed and answer quality
+depend on the model; there is no automatic performance guarantee. Groq is the recommended
+project API route. Every user supplies their own key; no shared credential is shipped.
+Arbitrary providers/models are not currently supported.
+
 Use `--provider groq` explicitly with your Groq key:
 
 ```powershell

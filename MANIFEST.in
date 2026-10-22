@@ -4,5 +4,8 @@ recursive-include examples *.py *.json *.md
 recursive-include scripts *.py
 recursive-include evals *.py *.json
 recursive-include tests *.py
+recursive-include skills *.md *.py *.yaml *.json *.txt *.whl
+include downloads/repotrail-skill.zip downloads/repotrail-skill.zip.sha256
+include skills/repotrail/LICENSE .gitattributes
 include .github/workflows/ci.yml
 global-exclude *.py[cod] __pycache__

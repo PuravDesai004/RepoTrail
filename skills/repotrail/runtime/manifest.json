@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "version": "1.1.0",
+  "wheel": "repotrail-1.1.0-py3-none-any.whl",
+  "sha256": "11bb37df22f5439a75564026e7f119411559cfc2c9f8d449d753a552a2c18438",
+  "python": "3.14",
+  "default_mode": "current_agent_model"
+}

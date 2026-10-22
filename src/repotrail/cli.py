@@ -9,6 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel, ValidationError
 
+from . import __version__
 from .ai_models import DEFAULT_MODELS, AIConfigurationError, GenerationConfig
 from .analysis import analyze_python_repository
 from .evidence import get_project_overview, get_symbol_context
@@ -20,6 +21,7 @@ from .telemetry import configure_logging
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="repotrail")
+    parser.add_argument("--version", action="version", version=f"RepoTrail {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
     for name, help_text in {
         "inspect": "inventory the current Git working tree",
@@ -67,6 +69,16 @@ def build_parser() -> argparse.ArgumentParser:
             command.add_argument("--max-attempts", type=int, default=2, choices=[1, 2])
         if name == "cache-prune":
             command.add_argument("--keep", type=int, default=100)
+    agent = commands.add_parser("agent", help="collect keyless historical evidence for your agent")
+    agent.add_argument("repository_root")
+    agent.add_argument("--mode", choices=["commit", "whole", "source"], default="commit")
+    agent.add_argument("--ref")
+    agent.add_argument("--cursor")
+    agent.add_argument("--page-size", type=int, default=10)
+    agent.add_argument("--path")
+    agent.add_argument("--start-line", type=int, default=1)
+    agent.add_argument("--end-line", type=int)
+    agent.add_argument("--json", action="store_true")
     demo = commands.add_parser("demo", help="create a new isolated synthetic Git fixture")
     demo.add_argument("destination", type=Path)
     demo.add_argument("--json", action="store_true")
@@ -105,7 +117,23 @@ def render_human(value, level: int = 0) -> str:
 def execute(args):
     root = getattr(args, "repository_root", "")
     result: Any
-    if args.command == "inspect":
+    if args.command == "agent":
+        from .agent_evidence import get_commit_evidence, get_history_page, get_revision_source
+
+        if args.cursor and args.mode != "whole":
+            raise InventoryError("Only whole-history mode accepts a continuation cursor.")
+        if args.mode == "whole":
+            result = get_history_page(root, args.ref, cursor=args.cursor, page_size=args.page_size)
+        elif args.mode == "source":
+            if not args.path:
+                raise InventoryError("Historical source mode requires --path.")
+            result = get_revision_source(
+                root, args.ref or "HEAD", args.path, start=args.start_line, end=args.end_line
+            )
+        else:
+            result = get_commit_evidence(root, args.ref or "HEAD")
+        return result, 0 if result.complete else 1
+    elif args.command == "inspect":
         return inspect_repository(root, max_files=args.max_files), 0
     if args.command == "symbols":
         result = analyze_python_repository(root)
