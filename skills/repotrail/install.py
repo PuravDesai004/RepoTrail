@@ -5,11 +5,29 @@ import json
 import shutil
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
 from bundle_support import bundle_files  # noqa: E402
+
+
+def activate(staged, target, manifest):
+    """Publish verified files atomically, tolerating short Windows directory locks."""
+    for attempt in range(6):
+        try:
+            staged.rename(target)
+            return
+        except OSError as error:
+            if target.exists():
+                existing, _ = bundle_files(target)
+                if existing == manifest:
+                    return
+                raise ValueError("A different skill appeared at the install destination.") from None
+            if getattr(error, "winerror", None) not in {5, 32, 33} or attempt == 5:
+                raise
+            time.sleep(0.05 * 2**attempt)
 
 
 def main():
@@ -47,7 +65,7 @@ def main():
                     parent
                 ) or not target.resolve().is_relative_to(parent):
                     raise ValueError("Install target escaped the requested skills directory.")
-                staged.rename(target)
+                activate(staged, target, manifest)
         print(
             json.dumps(
                 {
@@ -60,9 +78,11 @@ def main():
             )
         )
         return 0
-    except OSError, ValueError, KeyError:
+    except (OSError, ValueError, KeyError) as error:
+        code = getattr(error, "winerror", None)
+        detail = f" (Windows error {code})" if isinstance(code, int) else ""
         print(
-            "Skill installation failed: verify the complete bundle, permissions, and destination. Existing skills are preserved.",
+            f"Skill installation failed{detail}: verify the complete bundle, permissions, and destination. Existing skills are preserved.",
             file=sys.stderr,
         )
         return 2
