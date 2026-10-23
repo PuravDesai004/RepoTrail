@@ -32,7 +32,7 @@ locks get up to six activation attempts with at most 1.55 seconds of retry delay
 persistent access failures still stop with a sanitized error code and preserve existing skills.
 
 On first invocation the launcher verifies the bundled engine wheel and creates a cached
-virtual environment outside the inspected repository. It downloads five pinned core
+virtual environment outside the inspected repository. It downloads eight pinned core
 dependencies as binary wheels from PyPI, without installing dependencies from the target.
 Later invocations reuse this environment. Network/filesystem access follows your host's
 permissions; missing prerequisites and blocked downloads require user action.
@@ -70,7 +70,8 @@ per invocation, and gives the continuation cursor if coverage is partial. The en
 shared traversal ceiling is 20,000 commits. Long timelines may need further invocations.
 Metadata-only commits are identified separately from source-reviewed milestones.
 
-Packets select README/TOML and up to three Python files, plus bounded first-parent change
+Packets select README/build manifests and up to three source files, sampling Python,
+JavaScript/JSX and Java once each before filling the sample, plus bounded first-parent change
 excerpts. The agent can request more historical source by path and physical line range.
 Sources use immutable Git/blob IDs, SHA-256, inclusive physical lines and reference IDs.
 Packet text is capped at 32 KiB, metadata at 32 KiB and serialized JSON at 128 KiB. Snapshot
@@ -87,7 +88,7 @@ An explanation is advisory source analysis, not runtime verification.
 Real Codex CLI conversations have exercised the installed skill's history explanation and
 commit review, plus all three default MCP tools, using the host's configured model and
 account without a separate provider key. Returned citation IDs and unchanged target files
-were checked on a disposable Python repository.
+were checked on disposable Python and mixed Python/JavaScript/Java repositories.
 
 Claude Code's portable skill installation, launcher, and MCP configuration have automated
 coverage; a real Claude model conversation remains unverified. Windows and Ubuntu package
@@ -110,3 +111,7 @@ For launcher flags and cache overrides, see the
 [portable commands reference](../skills/repotrail/references/commands.md). The core engine
 also exposes `repotrail agent ROOT --mode commit|whole|source --json`, returning a separate
 `agent_evidence` schema `1`. Existing inventory/source-map contracts are unchanged.
+
+See [language coverage](languages.md) for supported declarations, imports, overloads,
+encodings and version `2` CLI/MCP documents. The skill uses the same language support;
+it never installs or executes dependencies from the inspected project.

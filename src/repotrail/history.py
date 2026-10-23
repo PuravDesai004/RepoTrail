@@ -217,7 +217,12 @@ def compare_file(
     head_oid: str,
     budget: ReadBudget,
     limits: EvidenceLimits,
-) -> ChangedFile:
+    *,
+    multilingual: bool = False,
+) -> Any:
+    from .language_models import RepositoryChangedFile
+
+    file_model: Any = RepositoryChangedFile if multilingual else ChangedFile
     fields: dict[str, Any] = {
         "status": status,
         "old_path": path if old_blob else None,
@@ -229,7 +234,7 @@ def compare_file(
         old_raw = read_blob(root, old_blob, budget) if old_blob else None
         new_raw = read_blob(root, new_blob, budget) if new_blob else None
     except EvidenceUnavailable as exc:
-        return ChangedFile(
+        return file_model(
             **fields,
             complete=False,
             diagnostics=[EvidenceDiagnostic(code=exc.code, message=str(exc), path=path)],
@@ -237,7 +242,7 @@ def compare_file(
     fields["old_sha256"] = hashlib.sha256(old_raw).hexdigest() if old_raw is not None else None
     fields["new_sha256"] = hashlib.sha256(new_raw).hexdigest() if new_raw is not None else None
     if any(raw is not None and b"\0" in raw for raw in (old_raw, new_raw)):
-        return ChangedFile(
+        return file_model(
             **fields,
             binary=True,
             complete=False,
@@ -289,7 +294,7 @@ def compare_file(
             raise InventoryError("Comparison exceeds the returned patch/context byte limit.")
         patch = patch_raw.decode("utf-8")
     except UnicodeError, LookupError, SyntaxError:
-        return ChangedFile(
+        return file_model(
             **fields,
             complete=False,
             diagnostics=[
@@ -301,7 +306,7 @@ def compare_file(
             ],
         )
     if "Binary files " in patch:
-        return ChangedFile(
+        return file_model(
             **fields,
             binary=True,
             complete=False,
@@ -376,10 +381,11 @@ def compare_file(
         )
         old_ranges.extend(old_changed)
         new_ranges.extend(new_changed)
-    old_symbols, old_diagnostics = overlapping_symbols(old_raw, path, old_ranges)
-    new_symbols, new_diagnostics = overlapping_symbols(new_raw, path, new_ranges)
+    parser = repository_overlapping_symbols if multilingual else overlapping_symbols
+    old_symbols, old_diagnostics = parser(old_raw, path, old_ranges)
+    new_symbols, new_diagnostics = parser(new_raw, path, new_ranges)
     diagnostics.extend(old_diagnostics + new_diagnostics)
-    return ChangedFile(
+    return file_model(
         **fields,
         complete=not diagnostics,
         hunks=hunks,
@@ -392,6 +398,47 @@ def compare_file(
 def compare_revisions(
     supplied: str | Path, base_ref: str, head_ref: str, *, limits: EvidenceLimits | None = None
 ) -> ChangeDocument:
+    """Legacy v1 comparison with Python declaration facts, retained for API compatibility."""
+    return _compare_revisions(supplied, base_ref, head_ref, limits=limits, multilingual=False)
+
+
+def compare_repository_revisions(
+    supplied: str | Path, base_ref: str, head_ref: str, *, limits: EvidenceLimits | None = None
+):
+    """Version 2 endpoint evidence with Python, JavaScript/JSX and Java symbol overlap."""
+    return _compare_revisions(supplied, base_ref, head_ref, limits=limits, multilingual=True)
+
+
+def repository_overlapping_symbols(raw, path, ranges):
+    from .language_models import language_for
+    from .language_parser import decode_language, parse_source
+
+    if raw is None or language_for(path) is None:
+        return [], []
+    try:
+        source, _count = decode_language(raw, path)
+        symbols, _imports = parse_source(source, path, DEFAULT_LIMITS.max_ast_nodes)
+    except SyntaxError, UnicodeError, LookupError, RecursionError, ParserLimitError:
+        return [], [
+            EvidenceDiagnostic(
+                code="source_unparsed",
+                message="Declaration overlap is unknown for this historical side.",
+                path=path,
+            )
+        ]
+    return [
+        symbol
+        for symbol in symbols
+        if any(
+            symbol.start_line <= span.end_line and symbol.end_line >= span.start_line
+            for span in ranges
+        )
+    ], []
+
+
+def _compare_revisions(supplied, base_ref, head_ref, *, limits, multilingual):
+    from .language_models import RepositoryChanges
+
     effective = limits or DEFAULT_EVIDENCE_LIMITS
     root = repository_root(supplied)
     base_oid, head_oid = resolve_commit(root, base_ref), resolve_commit(root, head_ref)
@@ -449,7 +496,16 @@ def compare_revisions(
     returned = 0
     for path, status, old_blob, new_blob in sorted(candidates):
         file = compare_file(
-            root, path, status, old_blob, new_blob, base_oid, head_oid, budget, effective
+            root,
+            path,
+            status,
+            old_blob,
+            new_blob,
+            base_oid,
+            head_oid,
+            budget,
+            effective,
+            multilingual=multilingual,
         )
         returned += sum(
             len(hunk.patch.encode("utf-8"))
@@ -463,7 +519,8 @@ def compare_revisions(
             )
         files.append(file)
     commits, more = commit_log(root, f"{base_oid}..{head_oid}", effective.max_history_entries)
-    return ChangeDocument(
+    document_model = RepositoryChanges if multilingual else ChangeDocument
+    return document_model(
         project_name=root.name,
         base_ref=base_ref,
         head_ref=head_ref,

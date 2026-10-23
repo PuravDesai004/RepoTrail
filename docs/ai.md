@@ -1,5 +1,11 @@
 # AI providers and troubleshooting
 
+Evidence selection supports Python, JavaScript/JSX and Java. Project explanations sample
+each present language before filling the bounded source sample; reviews use committed
+old/new hunks and language-aware symbol overlap. No target runtimes or build tools run.
+See [language coverage](languages.md). Your current agent can explain this same evidence
+through the skill or default MCP tools without enabling a provider workflow.
+
 Install `.[ai]` from the checkout in its own environment. AI runs only when explicitly
 requested by `explain` or an enabled AI MCP tool. Selected source is sent to the chosen provider;
 review eligibility and contents before using private code. Deterministic commands need no key.

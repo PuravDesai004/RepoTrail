@@ -6,16 +6,16 @@
 
 **Repository context you can trace back to the source.**
 
-RepoTrail inspects a local Python Git repository, maps declarations, retrieves exact source,
+RepoTrail inspects local Git repositories containing **Python, JavaScript/JSX, and Java**, maps declarations, retrieves exact source,
 and compares committed changes. Use the CLI, Python API, or MCP tools to give yourself
 and your coding agent evidence with paths, line numbers, and content hashes.
 Inspected code is never imported, executed, installed, tested, or modified.
 
-- **Understand a repository:** inventory, Python symbols, README, package declarations,
+- **Understand a repository:** inventory, symbols across supported languages, README, package declarations,
   entry points, and local history.
 - **Find relevant code:** retrieve declarations with decorators, numbered source, and SHA-256 references.
 - **Inspect changes:** compare two local commits with patches, historical references,
-  and overlapping Python symbols.
+  and overlapping Python, JavaScript, and Java symbols.
 - **Connect an agent:** expose the same APIs through a repository-bound MCP server.
 - **Opt into AI:** explanations and diff reviews through explicitly selected Groq or Gemini,
   with checked citations, bounded attempts, local cache, and resumable runs.
@@ -137,7 +137,7 @@ PowerShell, continuing from the install above:
 & $rt changes C:/code/my-project main HEAD --json
 ```
 
-`overview` includes dirty and eligible untracked Python source. `changes` compares **two
+`overview` includes dirty and eligible untracked supported source. `changes` compares **two
 committed trees**. Omit `--json` for human-readable output.
 On Linux/macOS, replace `& $rt` with `.venv/bin/repotrail`.
 See the [CLI reference](docs/cli.md) for commands and exit codes.
@@ -271,14 +271,26 @@ MCP configuration.
 ## Use the Python API
 
 ```python
-from repotrail.evidence import get_project_overview, get_symbol_context
-from repotrail.history import compare_revisions
+from repotrail.evidence import get_symbol_context
+from repotrail.multilang import analyze_repository, get_repository_overview
+from repotrail.history import compare_repository_revisions
 
-overview = get_project_overview('/path/to/repository')
-context = get_symbol_context('/path/to/repository', 'src/app.py', 'App.run')
-changes = compare_revisions('/path/to/repository', 'main', 'HEAD')
+overview = get_repository_overview('/path/to/repository')
+symbols = analyze_repository('/path/to/repository')
+context = get_symbol_context('/path/to/repository', 'src/Main.java', 'Main.run')
+changes = compare_repository_revisions('/path/to/repository', 'main', 'HEAD')
 print(context.model_dump_json(indent=2))
 ```
+
+Supported source files: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, and `.java`. The CLI,
+downloadable skill, and all three default MCP tools use this support without a provider
+API key. JavaScript/Java use static Tree-sitter grammars; no Node.js, JDK, npm, Maven,
+or Gradle installation is needed. Build manifests are evidence text and are never run.
+See [language coverage and schemas](docs/languages.md) for exact scope and limits.
+
+`symbols`, `overview`, and `changes` now return version `2` documents by default.
+Use `--python-only` for the legacy version `1` document. Existing Python APIs
+`analyze_python_repository`, `get_project_overview`, and `compare_revisions` remain available.
 
 ## Boundaries
 

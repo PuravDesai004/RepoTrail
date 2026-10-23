@@ -2,6 +2,11 @@
 
 The current model in Codex or Claude Code explains verified local repository evidence.
 No separate API key or RepoTrail clone is needed. Python 3.14 and Git 2.48+ must be installed.
+
+Supports Python, JavaScript/JSX (`.js`, `.jsx`, `.mjs`, `.cjs`) and Java repositories,
+including mixed projects. Static parsing needs no Node.js, JDK, npm, Maven or Gradle.
+Inspected code and build manifests never run. Request additional historical source when
+the bounded snapshot omits files or later lines. TypeScript has no symbol parser yet.
 First use needs PyPI access for pinned core dependencies; later runs reuse an isolated cache.
 
 After downloading/extracting the complete bundle, install for one or both hosts:

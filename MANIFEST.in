@@ -1,5 +1,5 @@
 include README.md LICENSE pyproject.toml
-include docs/agent-skill.md docs/ai.md docs/cli.md docs/limits.md docs/mcp.md
+include docs/agent-skill.md docs/ai.md docs/cli.md docs/limits.md docs/mcp.md docs/languages.md
 prune examples
 prune scripts
 prune tests

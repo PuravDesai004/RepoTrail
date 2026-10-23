@@ -3,7 +3,7 @@
 import hashlib
 import tomllib
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from pydantic import ValidationError
 
@@ -31,6 +31,9 @@ from .product_models import (
     stable_digest,
 )
 from .source_models import DEFAULT_LIMITS, PythonSourceMap
+
+if TYPE_CHECKING:
+    from .language_models import RepositorySourceMap
 
 
 class EvidenceUnavailable(Exception):
@@ -144,12 +147,16 @@ def get_symbol_context(
     definition_line: int | None = None,
     *,
     limits: EvidenceLimits | None = None,
-    source_map: PythonSourceMap | None = None,
+    source_map: PythonSourceMap | RepositorySourceMap | None = None,
+    definition_column: int | None = None,
 ) -> SymbolContext:
     effective = limits or DEFAULT_EVIDENCE_LIMITS
     root = repository_root(supplied)
     path = safe_relative(path)
-    mapping = source_map if source_map is not None else analyze_python_repository(root)
+    from .language_parser import decode_language
+    from .multilang import analyze_repository
+
+    mapping = source_map if source_map is not None else analyze_repository(root)
     fields: dict[str, Any] = {
         "project_name": mapping.project_name,
         "git": mapping.git,
@@ -187,6 +194,10 @@ def get_symbol_context(
         for symbol in file.symbols
         if symbol.qualified_name == qualified_name
         and (definition_line is None or symbol.definition_line == definition_line)
+        and (
+            definition_column is None
+            or getattr(symbol, "definition_column", 1) == definition_column
+        )
     ]
     if len(matches) != 1:
         return SymbolContext(
@@ -202,7 +213,7 @@ def get_symbol_context(
         raw, signature = read_eligible(
             root, path, inventory, DEFAULT_LIMITS.max_file_bytes, expected_sha256=file.sha256
         )
-        source, _count = decode_source(raw)
+        source, _count = decode_language(raw, path)
     except (EvidenceUnavailable, UnicodeError, LookupError, SyntaxError) as exc:
         code = exc.code if isinstance(exc, EvidenceUnavailable) else "encoding_error"
         return SymbolContext(
@@ -248,16 +259,27 @@ def get_symbol_context(
 def get_project_overview(
     supplied: str | Path, *, limits: EvidenceLimits | None = None
 ) -> ProjectOverview:
+    return _project_overview(
+        supplied,
+        limits=limits,
+        mapping_api=analyze_python_repository,
+        document_model=ProjectOverview,
+    )
+
+
+def _project_overview(supplied, *, limits, mapping_api, document_model):
     from .history import recent_history
+    from .language_models import ManifestEvidence, ManifestFormat, RepositoryOverview
 
     effective = limits or DEFAULT_EVIDENCE_LIMITS
     root = repository_root(supplied)
     inventory = inspect_repository(root)
     signatures = {entry.path: file_signature(root, entry.path) for entry in inventory.files}
-    mapping = analyze_python_repository(root)
+    mapping = mapping_api(root)
     diagnostics: list[EvidenceDiagnostic] = []
     docs: list[SourceExcerpt] = []
     entries: list[EntryPoint] = []
+    manifests: list[ManifestEvidence] = []
     packaging = PackagingMetadata(format="absent_or_unsupported")
     paths = {entry.path for entry in inventory.files}
     readmes = [
@@ -269,6 +291,19 @@ def get_project_overview(
         ["pyproject.toml"] if "pyproject.toml" in paths else []
     )
     selected += [path for path in sorted(paths) if PurePosixPath(path).name == "__main__.py"][:10]
+    manifest_names = ("package.json", "pom.xml", "build.gradle", "build.gradle.kts")
+    if document_model is RepositoryOverview:
+        manifest_paths = [
+            path for path in sorted(paths) if PurePosixPath(path).name in manifest_names
+        ]
+        selected += manifest_paths[:20]
+        if len(manifest_paths) > 20:
+            diagnostics.append(
+                EvidenceDiagnostic(
+                    code="manifest_limit",
+                    message="Only the first twenty eligible build manifests are shown.",
+                )
+            )
     for path in selected:
         try:
             max_bytes = (
@@ -325,6 +360,14 @@ def get_project_overview(
                             )
                             for name, target in sorted(scripts.items())
                         )
+            elif PurePosixPath(path).name in manifest_names and excerpt:
+                manifests.append(
+                    ManifestEvidence(
+                        path=path,
+                        format=cast(ManifestFormat, PurePosixPath(path).name),
+                        evidence=excerpt,
+                    )
+                )
             elif PurePosixPath(path).name == "__main__.py":
                 if excerpt:
                     entries.append(
@@ -368,7 +411,7 @@ def get_project_overview(
         if signature is None:
             raise InventoryError("Repository eligibility changed during overview; retry.")
         require_unchanged(root, path, signature)
-    return ProjectOverview(
+    return document_model(
         project_name=inventory.project_name,
         git=inventory.git,
         complete=mapping.complete and not diagnostics and history.complete,
@@ -379,4 +422,5 @@ def get_project_overview(
         entry_points=entries,
         recent_history=history,
         diagnostics=diagnostics,
+        **({"manifests": manifests} if document_model is RepositoryOverview else {}),
     )

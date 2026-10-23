@@ -8,9 +8,9 @@ Unicode for Windows console compatibility.
 | Command | Purpose |
 | --- | --- |
 | `inspect ROOT [--max-files N]` | Tracked and eligible nonignored untracked files. |
-| `symbols ROOT` | Python definitions, imports, decorators, and diagnostics. |
+| `symbols ROOT` | Python, JavaScript/JSX, and Java declarations, imports and diagnostics. |
 | `overview ROOT` | Inventory, source map, README, packaging, and local history. |
-| `context ROOT PATH QUALIFIED_NAME [--definition-line N]` | Exact declaration, numbered lines, hash, and citation. |
+| `context ROOT PATH QUALIFIED_NAME [--definition-line N] [--definition-column N]` | Exact declaration, numbered lines, hash, and citation. |
 | `history ROOT [--ref HEAD] [--limit 20]` | Bounded local commit metadata. |
 | `agent ROOT --mode commit\|whole\|source [--ref REF]` | Keyless historical evidence for the current agent model; see the [skill guide](agent-skill.md). |
 | `changes ROOT BASE HEAD` | Committed endpoint trees, statuses, patches, and symbol overlap. |
@@ -21,9 +21,14 @@ Unicode for Windows console compatibility.
 | `mcp --repo ROOT [--enable-ai]` | Repository-bound stdio MCP server. |
 
 Duplicate symbol names return candidates; repeat `context` with one candidate's
-`--definition-line`. Names describe lexical scopes, not import resolution or dynamic dispatch.
+`--definition-line` and, for same-line overloads, `--definition-column` from `symbols`.
+Names describe lexical scopes, not import resolution or dynamic dispatch.
 `changes` reads existing local objects, excludes uncommitted edits, and represents renames
 as deletion plus addition. It never fetches or checks out revisions.
+
+`symbols`, `overview`, and `changes` return separate version `2` multi-language documents.
+Add `--python-only` to obtain the legacy version `1` contracts. `inspect` is unchanged.
+See [language coverage](languages.md) for extensions, declarations and encoding policy.
 
 ## AI arguments
 

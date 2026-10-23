@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any
 
 from .ai_models import EvidencePackage, GenerationConfig, Task
-from .evidence import excerpt_text, get_project_overview, get_symbol_context
+from .evidence import excerpt_text, get_symbol_context
 from .git import repository_root
-from .history import compare_revisions
+from .history import compare_repository_revisions
+from .multilang import get_repository_overview
 from .product_models import NumberedLine, SourceExcerpt, SourceReference, stable_digest
 
 
@@ -66,15 +67,22 @@ def collect_evidence(
     candidates: list[SourceExcerpt] = []
     omissions: list[str] = []
     if task == "explain_project":
-        document = get_project_overview(root)
+        document = get_repository_overview(root)
         manifest = stable_digest(document.model_dump(mode="json"))
         candidates.extend(document.documentation)
         if document.packaging.evidence:
             candidates.append(document.packaging.evidence)
+        candidates.extend(manifest.evidence for manifest in document.manifests)
         eligible = [
             file for file in document.source_map.files if file.symbols and file.status == "analyzed"
         ]
-        for file in eligible[:3]:
+        sample = []
+        for language in ("python", "javascript", "java"):
+            first = next((file for file in eligible if file.language == language), None)
+            if first:
+                sample.append(first)
+        sample.extend(file for file in eligible if file not in sample)
+        for file in sample[:3]:
             symbol = file.symbols[0]
             context = get_symbol_context(
                 root,
@@ -87,13 +95,13 @@ def collect_evidence(
                 candidates.append(context.excerpt)
         if len(eligible) > 3:
             omissions.append(
-                f"Selected the first three declaration-bearing files in path order; {len(eligible) - 3} additional files were not supplied as source."
+                f"Selected three declaration-bearing files, sampling each supported language first; {len(eligible) - 3} additional files were not supplied as source."
             )
         metadata: dict[str, Any] = {
             "project_name": document.project_name,
             "git": document.git.model_dump(),
             "inventory_counts": document.inventory.counts.model_dump(),
-            "python_counts": document.source_map.counts.model_dump(),
+            "source_counts": document.source_map.counts.model_dump(),
             "packaging_format": document.packaging.format,
             "declared_dependencies": document.packaging.dependencies[:20],
             "entry_points": [entry.model_dump(mode="json") for entry in document.entry_points[:10]],
@@ -115,7 +123,7 @@ def collect_evidence(
             from .git import InventoryError
 
             raise InventoryError("Change explanation/review requires both base_ref and head_ref.")
-        comparison = compare_revisions(root, base_ref, head_ref)
+        comparison = compare_repository_revisions(root, base_ref, head_ref)
         manifest = stable_digest(comparison.model_dump(mode="json"))
         for changed_file in comparison.files:
             for hunk in changed_file.hunks:

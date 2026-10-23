@@ -14,8 +14,9 @@ from .ai_models import DEFAULT_MODELS, AIConfigurationError, GenerationConfig
 from .analysis import analyze_python_repository
 from .evidence import get_project_overview, get_symbol_context
 from .git import InventoryError
-from .history import compare_revisions, recent_history
+from .history import compare_repository_revisions, compare_revisions, recent_history
 from .inventory import MAX_FILES, inspect_repository
+from .multilang import analyze_repository, get_repository_overview
 from .telemetry import configure_logging
 
 
@@ -25,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     for name, help_text in {
         "inspect": "inventory the current Git working tree",
-        "symbols": "map Python declarations and imports",
+        "symbols": "map Python, JavaScript/JSX and Java declarations and imports",
         "overview": "observe structure, README, packaging and local history",
         "context": "retrieve exact verified declaration source",
         "history": "read bounded local commit metadata",
@@ -39,10 +40,15 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--json", action="store_true", help="print validated JSON")
         if name == "inspect":
             command.add_argument("--max-files", type=int, default=MAX_FILES)
+        if name in ("symbols", "overview", "changes"):
+            command.add_argument(
+                "--python-only", action="store_true", help="return the legacy v1 document"
+            )
         if name == "context":
             command.add_argument("path")
             command.add_argument("qualified_name")
             command.add_argument("--definition-line", type=int)
+            command.add_argument("--definition-column", type=int)
         if name == "history":
             command.add_argument("--ref", default="HEAD")
             command.add_argument("--limit", type=int, default=20)
@@ -136,15 +142,22 @@ def execute(args):
     elif args.command == "inspect":
         return inspect_repository(root, max_files=args.max_files), 0
     if args.command == "symbols":
-        result = analyze_python_repository(root)
+        result = analyze_python_repository(root) if args.python_only else analyze_repository(root)
     elif args.command == "overview":
-        result = get_project_overview(root)
+        result = get_project_overview(root) if args.python_only else get_repository_overview(root)
     elif args.command == "context":
-        result = get_symbol_context(root, args.path, args.qualified_name, args.definition_line)
+        result = get_symbol_context(
+            root,
+            args.path,
+            args.qualified_name,
+            args.definition_line,
+            definition_column=args.definition_column,
+        )
     elif args.command == "history":
         result = recent_history(root, ref=args.ref, limit=args.limit)
     elif args.command == "changes":
-        result = compare_revisions(root, args.base_ref, args.head_ref)
+        compare = compare_revisions if args.python_only else compare_repository_revisions
+        result = compare(root, args.base_ref, args.head_ref)
     elif args.command == "demo":
         from .demo import build_demo
 

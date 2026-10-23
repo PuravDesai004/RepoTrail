@@ -8,11 +8,13 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .agent_models import AgentEvidence
-from .analysis import ReadBudget, decode_source
+from .analysis import ReadBudget
 from .evidence import EvidenceUnavailable, make_excerpt, safe_relative
 from .git import MAX_CANDIDATES, InventoryError, decode_git, repository_root, run_git
-from .history import commit_log, compare_revisions, read_blob, resolve_commit
+from .history import commit_log, compare_repository_revisions, read_blob, resolve_commit
 from .inventory import MAX_FILES, excluded_path
+from .language_models import language_for
+from .language_parser import decode_language
 from .product_models import EvidenceDiagnostic, SourceExcerpt
 from .selection import repository_id, source_text, trim_source
 from .source_models import DEFAULT_LIMITS
@@ -119,7 +121,7 @@ def source_excerpt(
     if b"\0" in raw:
         raise EvidenceUnavailable("binary", "Binary contents are unavailable as text evidence.")
     try:
-        source, count = decode_source(raw)
+        source, count = decode_language(raw, path)
     except (UnicodeError, LookupError, SyntaxError) as exc:
         raise EvidenceUnavailable("encoding", "Historical source encoding is unsupported.") from exc
     if count == 0 or not 1 <= start <= count or (end is not None and not start <= end <= count):
@@ -176,13 +178,31 @@ def get_commit_evidence(supplied: str | Path, ref: str = "HEAD") -> AgentEvidenc
         if line.startswith(b"parent ")
     ]
     files, excluded = revision_tree(root, oid)
-    python = [(path, blob) for path, blob in files if Path(path).suffix.lower() == ".py"]
-    selected = [(path, blob) for path, blob in files if path in ("README.md", "pyproject.toml")]
-    selected.extend(python[:3])
+    source_files = [(path, blob) for path, blob in files if language_for(path)]
+    selected = [
+        (path, blob)
+        for path, blob in files
+        if path
+        in (
+            "README.md",
+            "pyproject.toml",
+            "package.json",
+            "pom.xml",
+            "build.gradle",
+            "build.gradle.kts",
+        )
+    ]
+    samples = []
+    for language in ("python", "javascript", "java"):
+        first = next((item for item in source_files if language_for(item[0]) == language), None)
+        if first:
+            samples.append(first)
+    samples.extend(item for item in source_files if item not in samples)
+    selected.extend(samples[:3])
     candidates = []
     diagnostics = []
     omissions = [
-        "Snapshot source is selected README/TOML and up to three Python files; request additional historical source when needed."
+        "Snapshot source is selected README/build manifests and up to three source files, sampling each supported language first; request additional historical source when needed."
     ]
     metadata: dict[str, Any] = {
         "commit": commit.model_dump(),
@@ -193,7 +213,11 @@ def get_commit_evidence(supplied: str | Path, ref: str = "HEAD") -> AgentEvidenc
         "repository_shallow": shallow_repository(root),
         "eligible_file_count": len(files),
         "excluded_file_count": excluded,
-        "python_file_count": len(python),
+        "python_file_count": sum(language_for(path) == "python" for path, _blob in files),
+        "source_file_counts": {
+            language: sum(language_for(path) == language for path, _blob in files)
+            for language in ("python", "javascript", "java")
+        },
         "files": [path for path, _ in files[:50]],
         "file_sample_limit": 50,
     }
@@ -228,7 +252,7 @@ def get_commit_evidence(supplied: str | Path, ref: str = "HEAD") -> AgentEvidenc
         omissions.append("Repository is shallow; only locally available history can be explained.")
     if parents:
         try:
-            comparison = compare_revisions(root, parents[0], oid)
+            comparison = compare_repository_revisions(root, parents[0], oid)
             metadata["changed_files"] = [
                 {
                     "path": file.new_path or file.old_path,

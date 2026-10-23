@@ -9,11 +9,12 @@ from pydantic import Field
 
 from . import __version__
 from .ai_models import AIConfigurationError, GenerationConfig, WorkflowResult
-from .evidence import get_project_overview as overview_api
 from .evidence import get_symbol_context as context_api
 from .git import InventoryError, repository_root
-from .history import compare_revisions
-from .product_models import ChangeDocument, ProjectOverview, SymbolContext
+from .history import compare_repository_revisions
+from .language_models import RepositoryChanges, RepositoryOverview
+from .multilang import get_repository_overview as overview_api
+from .product_models import SymbolContext
 from .source_models import SourceModel
 
 
@@ -61,8 +62,8 @@ def create_server(
     )
 
     @server.tool(annotations=read)
-    def get_project_overview() -> ToolResponse[ProjectOverview]:
-        """Observe bounded inventory, Python facts, packaging, README and recent local history."""
+    def get_project_overview() -> ToolResponse[RepositoryOverview]:
+        """Observe Python, JavaScript/JSX and Java symbols, build manifest text and local history."""
         return guarded(overview_api, root)
 
     @server.tool(annotations=read)
@@ -70,16 +71,24 @@ def create_server(
         path: str = Field(max_length=1024),
         qualified_name: str = Field(max_length=1024),
         definition_line: int | None = Field(default=None, ge=1),
+        definition_column: int | None = Field(default=None, ge=1),
     ) -> ToolResponse[SymbolContext]:
         """Read eligible relative declaration source, including decorators; resolve ambiguity by line."""
-        return guarded(context_api, root, path, qualified_name, definition_line)
+        return guarded(
+            context_api,
+            root,
+            path,
+            qualified_name,
+            definition_line,
+            definition_column=definition_column,
+        )
 
     @server.tool(annotations=read)
     def summarize_changes(
         base_ref: str = Field(max_length=1024), head_ref: str = Field(max_length=1024)
-    ) -> ToolResponse[ChangeDocument]:
+    ) -> ToolResponse[RepositoryChanges]:
         """Compare two local committed endpoint trees with old/new source evidence; no AI."""
-        return guarded(compare_revisions, root, base_ref, head_ref)
+        return guarded(compare_repository_revisions, root, base_ref, head_ref)
 
     if enable_ai:
         ai = ToolAnnotations(

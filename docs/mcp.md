@@ -10,6 +10,13 @@ Follow the [README's Codex and Claude Code setup](../README.md#connect-codex-or-
 for installation, registration commands on Windows/Linux/macOS, example prompts, verification,
 and changing repository bindings. The skill and MCP server work independently.
 
+All three default tools support Python, JavaScript/JSX and Java, including mixed projects.
+`get_project_overview` and `summarize_changes` return version `2` documents; symbol context
+retains its existing line-evidence contract and accepts an optional `definition_column`
+alongside `definition_line` for same-line overloads. See [language coverage](languages.md).
+Example prompt: “Explain this Java service and its JavaScript UI, then compare HEAD~1
+with HEAD. Use RepoTrail and cite returned source references; do not run the project.”
+
 The host starts one local stdio server per repository with this command:
 
 ```powershell

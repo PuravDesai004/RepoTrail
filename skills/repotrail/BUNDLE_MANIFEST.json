@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "name": "repotrail",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "files": [
     {
       "path": "LICENSE",
@@ -9,11 +9,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "a0b0ea4f01b111e4ccbf1f630d3cbdf143038f0231848dcc56b037f9c857a01a"
+      "sha256": "0077226e43e66f91f93d4c954d1e386954063b68fa6165ec81679ffe616a019b"
     },
     {
       "path": "SKILL.md",
-      "sha256": "f8cc0f5078ba92b42ed1a241bee0d542d53e810cce861579723958d2924071db"
+      "sha256": "de1245d6b9767939371b42b47e59df56978361ca77811ee494e7d37b99e68eda"
     },
     {
       "path": "agents/openai.yaml",
@@ -33,15 +33,15 @@
     },
     {
       "path": "runtime/manifest.json",
-      "sha256": "c1efc17798da902242a66517c3b57026609684de85f6b26d06d67412172ac690"
+      "sha256": "c71fb910b88c2aae7483375f7d236012850b2c7dd4b0578ee22b668b75ab6960"
     },
     {
-      "path": "runtime/repotrail-1.1.0-py3-none-any.whl",
-      "sha256": "2282c071076dcc0c3039d9c66a782e9c136855f82b52f72266cbb142aba22a93"
+      "path": "runtime/repotrail-1.2.0-py3-none-any.whl",
+      "sha256": "34ef80dc37aa2b8ab577d65d20638abf852dde1e58364a1e3f20e9ad43b23692"
     },
     {
       "path": "runtime/requirements-core.txt",
-      "sha256": "2989a770637cd9e1c222a00f59382e6bd6f20dfc806fa95a9e0ce27156bf360c"
+      "sha256": "c8e87f6a204f5f37cc494df8c2e8a1d5697519f775280562a40dbd78aacee583"
     },
     {
       "path": "scripts/bundle_support.py",
