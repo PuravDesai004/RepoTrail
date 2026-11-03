@@ -33,11 +33,11 @@
     },
     {
       "path": "runtime/manifest.json",
-      "sha256": "c71fb910b88c2aae7483375f7d236012850b2c7dd4b0578ee22b668b75ab6960"
+      "sha256": "79ab9335115bcf51e75fb8fc629588b1d723aca300c843d20ac1277e0ca67b77"
     },
     {
       "path": "runtime/repotrail-1.2.0-py3-none-any.whl",
-      "sha256": "34ef80dc37aa2b8ab577d65d20638abf852dde1e58364a1e3f20e9ad43b23692"
+      "sha256": "09f1f41dc3119ff154ee6a9b09dc88d2db6e7dc6850243f78734e22989965282"
     },
     {
       "path": "runtime/requirements-core.txt",
