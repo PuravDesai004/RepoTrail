@@ -305,14 +305,22 @@ for supported scope and tradeoffs.
 
 ## Tests
 
-Install the optional development, AI, and MCP dependencies together with pytest, then run the test suite from the repository root:
+From the repository root, create a Python 3.14 environment, install the test dependencies, and run the offline suite.
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install '.[ai,mcp,dev]' pytest
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e '.[ai,mcp,dev]' pytest
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-The tests use synthetic repositories and provider test doubles. Live provider calls require a separate key and approval. Public CI currently checks packaging, lint, and types; it does not run this test suite.
+On macOS or Linux, use `python3.14 -m venv .venv`,
+`./.venv/bin/python -m pip install -e '.[ai,mcp,dev]' pytest`, and
+`./.venv/bin/python -m pytest -q`.
+
+Tests use synthetic repositories and provider doubles; they do not make live AI calls.
+Live provider checks need a key and separate approval. Public CI checks packaging, lint,
+and types, but does not run this suite.
+
 ## Product files
 
 ```text
