@@ -303,6 +303,16 @@ A source map describes syntax, not runtime behavior. A valid citation confirms i
 reference, not the correctness of an AI interpretation. See [limits](docs/limits.md)
 for supported scope and tradeoffs.
 
+## Tests
+
+Install the optional development, AI, and MCP dependencies together with pytest, then run the test suite from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install '.[ai,mcp,dev]' pytest
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+The tests use synthetic repositories and provider test doubles. Live provider calls require a separate key and approval. Public CI currently checks packaging, lint, and types; it does not run this test suite.
 ## Product files
 
 ```text
